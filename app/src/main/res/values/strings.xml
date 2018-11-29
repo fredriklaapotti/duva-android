@@ -4,6 +4,16 @@
     <string name="title_zones">Zones</string>
     <string name="title_settings">Settings</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="txt_desc_username">Logged in as:</string>
+    <string name="txt_username">username placeholder</string>
+    <string name="txt_desc_currentZone">Current zone:</string>
+    <string name="txt_currentZone">currentZone placeholder</string>
+    <string name="btn_desc_larmRecord">Larm record button</string>
+    <string name="permission_button_ok">OK</string>
+    <string name="permission_title">Permission required</string>
+    <string name="permission_location_message">Permission to access location is required for this app</string>
+    <string name="permission_ACCESS_FINE_LOCATION">Permission to access location is required</string>
+    <string name="permission_WRITE_EXTERNAL_STORAGE">Permission to write to shared storage is required</string>
 </resources>

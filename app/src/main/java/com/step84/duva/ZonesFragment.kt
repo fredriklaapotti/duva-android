@@ -1,5 +1,6 @@
 package com.step84.duva
 
+import android.Manifest
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
@@ -7,10 +8,9 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.google.android.gms.maps.*
+import com.google.android.gms.maps.model.LatLng
 
-
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
 
@@ -23,11 +23,15 @@ private const val ARG_PARAM2 = "param2"
  * create an instance of this fragment.
  *
  */
-class ZonesFragment : Fragment() {
-    // TODO: Rename and change types of parameters
+class ZonesFragment : Fragment(), OnMapReadyCallback {
     private var param1: String? = null
     private var param2: String? = null
     private var listener: OnFragmentInteractionListener? = null
+
+    private val TAG = "ZonesFragment"
+
+    private var mapView: View? = null
+    private val mMap: GoogleMap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,7 +49,6 @@ class ZonesFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_zones, container, false)
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
     fun onButtonPressed(uri: Uri) {
         listener?.onFragmentInteraction(uri)
     }
@@ -76,8 +79,26 @@ class ZonesFragment : Fragment() {
      * for more information.
      */
     interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         fun onFragmentInteraction(uri: Uri)
+    }
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+
+        if (activity != null) {
+            val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
+
+            mapFragment.getMapAsync(this)
+            mapView = mapFragment.view
+        }
+    }
+
+    override fun onMapReady(mMap: GoogleMap) {
+        val home = LatLng(57.670897, 15.860455)
+        mMap.isMyLocationEnabled = true
+        mMap.uiSettings.isZoomControlsEnabled = true
+        mMap.uiSettings.isMyLocationButtonEnabled = true
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(home, 15f))
     }
 
     companion object {
@@ -89,7 +110,6 @@ class ZonesFragment : Fragment() {
          * @param param2 Parameter 2.
          * @return A new instance of fragment ZonesFragment.
          */
-        // TODO: Rename and change types and number of parameters
         @JvmStatic
         fun newInstance(param1: String, param2: String) =
             ZonesFragment().apply {
