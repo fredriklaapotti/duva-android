@@ -3,7 +3,9 @@ package com.step84.duva
 import android.content.Context
 import android.util.Log
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.EventListener
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.QuerySnapshot
 
 interface FirestoreListener<T> {
     fun onStart()
@@ -57,6 +59,7 @@ object Firestore {
         callback.onStart()
         val db = FirebaseFirestore.getInstance()
 
+        /*
         db.collection(DB_SUBSCRIPTIONS)
             //.whereEqualTo(DB_SUBSCRIPTIONS_ACTIVE, true)
             .whereEqualTo(DB_SUBSCRIPTIONS_USER, firebaseUser?.uid)
@@ -71,6 +74,21 @@ object Firestore {
                 } else {
                     Log.d(TAG, "duva: Exception", task.exception)
                     callback.onFailed()
+                }
+            }
+            */
+        db.collection(DB_SUBSCRIPTIONS)
+            .whereEqualTo(DB_SUBSCRIPTIONS_USER, firebaseUser?.uid)
+            .addSnapshotListener { querySnapshot, firebaseFirestoreException ->
+                if(firebaseFirestoreException != null) {
+                    Log.d(TAG, "duva: Listen failed:", firebaseFirestoreException)
+                    return@addSnapshotListener
+                }
+
+                if(querySnapshot != null) {
+                    Log.i(TAG, "duva: subscription fetched or updated for user = " + firebaseUser?.uid)
+                    val subscriptionsFromDb = querySnapshot.toObjects(Subscription::class.java)
+                    callback.onSuccess(subscriptionsFromDb)
                 }
             }
     }

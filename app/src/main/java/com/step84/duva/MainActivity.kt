@@ -92,7 +92,7 @@ class MainActivity : AppCompatActivity(),
                 }
             }
 
-        setupUser()
+        setupUserAndSubscriptions()
 
         Log.i(TAG, "duva: currentUser object in MainActivity = " + currentUser?.lastLocation) // Should return null
     }
@@ -165,7 +165,7 @@ class MainActivity : AppCompatActivity(),
         Log.i(TAG, "Location updates stopped")
     }
 
-    private fun setupUser() {
+    private fun setupUserAndSubscriptions() {
         Firestore.getUser(auth.currentUser, object: FirestoreListener<User> {
             override fun onStart() {
                 //Something
@@ -173,7 +173,7 @@ class MainActivity : AppCompatActivity(),
 
             override fun onSuccess(obj: User) {
                 currentUser = obj
-                setupSubscriptions()
+                setupSubscriptionsForUser()
                 Log.i(TAG, "duva: currentUser object in getUser.onSuccess() = " + currentUser?.uid)
             }
 
@@ -183,7 +183,7 @@ class MainActivity : AppCompatActivity(),
         })
     }
 
-    private fun setupSubscriptions() {
+    private fun setupSubscriptionsForUser() {
         Firestore.getSubscriptions(auth.currentUser, object: FirestoreListener<MutableList<Subscription>> {
             override fun onStart() {
                 // Something
