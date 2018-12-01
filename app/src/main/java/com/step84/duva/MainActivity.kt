@@ -17,6 +17,11 @@ import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.Task
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.firestore.GeoPoint
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(),
@@ -31,6 +36,9 @@ class MainActivity : AppCompatActivity(),
     var currentUser: User? = null
     var currentZone: Zone? = null
     var currentSubscription: Subscription? = null
+    var subscriptions: MutableList<Subscription>? = null
+
+    private lateinit var auth: FirebaseAuth
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
@@ -67,7 +75,26 @@ class MainActivity : AppCompatActivity(),
         setupPermission(Manifest.permission.ACCESS_FINE_LOCATION)
         setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
 
-        currentUser = User("abcdef", LatLng(57.901, 15.18))
+        val firestore = FirebaseFirestore.getInstance()
+        val settings = FirebaseFirestoreSettings.Builder()
+            .setTimestampsInSnapshotsEnabled(true)
+            .build()
+        firestore.firestoreSettings = settings
+
+        auth = FirebaseAuth.getInstance()
+
+        auth.signInWithEmailAndPassword("fredrik.laapotti@gmail.com", "password")
+            .addOnCompleteListener(this) { task ->
+                if(task.isSuccessful) {
+                    Log.i(TAG, "duva: user logged in")
+                } else {
+                    Log.d(TAG, "duva: failed to login user", task.exception)
+                }
+            }
+
+        setupUser()
+
+        Log.i(TAG, "duva: currentUser object in MainActivity = " + currentUser?.lastLocation) // Should return null
     }
 
     override fun onFragmentInteraction(uri: Uri) {
@@ -117,7 +144,7 @@ class MainActivity : AppCompatActivity(),
 
             registerLocationListener()
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
-            Log.i(TAG, "Location updates started")
+            Log.i(TAG, "duva: Location updates started")
         }
     }
 
@@ -126,8 +153,8 @@ class MainActivity : AppCompatActivity(),
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
                 for(location in locationResult.locations) {
-                    currentUser?.lastLocation = LatLng(location.latitude, location.longitude)
-                    Log.i(TAG, "currentUser?.lastLocation = " + currentUser?.lastLocation.toString())
+                    //currentUser?.lastLocation = GeoPoint(location.latitude, location.longitude)
+                    //Log.i(TAG, "duva: currentUser?.lastLocation = " + currentUser?.lastLocation.toString())
                 }
             }
         }
@@ -136,6 +163,42 @@ class MainActivity : AppCompatActivity(),
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
         Log.i(TAG, "Location updates stopped")
+    }
+
+    private fun setupUser() {
+        Firestore.getUser(auth.currentUser, object: FirestoreListener<User> {
+            override fun onStart() {
+                //Something
+            }
+
+            override fun onSuccess(obj: User) {
+                currentUser = obj
+                setupSubscriptions()
+                Log.i(TAG, "duva: currentUser object in getUser.onSuccess() = " + currentUser?.uid)
+            }
+
+            override fun onFailed() {
+                // Something
+            }
+        })
+    }
+
+    private fun setupSubscriptions() {
+        Firestore.getSubscriptions(auth.currentUser, object: FirestoreListener<MutableList<Subscription>> {
+            override fun onStart() {
+                // Something
+            }
+
+            override fun onSuccess(obj: MutableList<Subscription>) {
+                for(subscription in obj) {
+                    Log.i(TAG, "duva: subsription found = " + subscription.zone + " for user = " + currentUser?.uid)
+                }
+            }
+
+            override fun onFailed() {
+                // Something
+            }
+        })
     }
 
     fun setupPermission(permissionString: String) {
