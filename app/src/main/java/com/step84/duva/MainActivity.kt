@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
+import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.Task
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -35,11 +36,12 @@ class MainActivity : AppCompatActivity(),
 
     var currentUser: User? = null
     var currentZone: Zone? = null
-    var currentSubscription: Subscription? = null
-    var subscriptions: MutableList<Subscription>? = null
+    var allZones: MutableList<Zone>? = null
+    var currentSubscriptions: MutableList<Subscription>? = null
 
     private lateinit var auth: FirebaseAuth
 
+    private var googleMapInterface: GoogleMapInterface? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
@@ -92,7 +94,11 @@ class MainActivity : AppCompatActivity(),
                 }
             }
 
-        setupUserAndSubscriptions()
+        setupUser()
+        setupSubscriptions()
+        setupZones()
+
+        setMapListener(ZonesFragment())
 
         Log.i(TAG, "duva: currentUser object in MainActivity = " + currentUser?.lastLocation) // Should return null
     }
@@ -153,6 +159,8 @@ class MainActivity : AppCompatActivity(),
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
                 for(location in locationResult.locations) {
+                    //var fragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
+                    googleMapInterface?.onLocationUpdate(GeoPoint(location.latitude, location.longitude))
                     //currentUser?.lastLocation = GeoPoint(location.latitude, location.longitude)
                     //Log.i(TAG, "duva: currentUser?.lastLocation = " + currentUser?.lastLocation.toString())
                 }
@@ -165,16 +173,18 @@ class MainActivity : AppCompatActivity(),
         Log.i(TAG, "Location updates stopped")
     }
 
-    private fun setupUserAndSubscriptions() {
-        Firestore.getUser(auth.currentUser, object: FirestoreListener<User> {
+    fun setMapListener(listener: GoogleMapInterface) {
+        this.googleMapInterface = listener
+    }
+
+    private fun setupUser() {
+        Firestore.userListener(auth.currentUser, object: FirestoreListener<User> {
             override fun onStart() {
                 //Something
             }
 
             override fun onSuccess(obj: User) {
                 currentUser = obj
-                setupSubscriptionsForUser()
-                Log.i(TAG, "duva: currentUser object in getUser.onSuccess() = " + currentUser?.uid)
             }
 
             override fun onFailed() {
@@ -183,15 +193,36 @@ class MainActivity : AppCompatActivity(),
         })
     }
 
-    private fun setupSubscriptionsForUser() {
-        Firestore.getSubscriptions(auth.currentUser, object: FirestoreListener<MutableList<Subscription>> {
+    private fun setupSubscriptions() {
+        Firestore.subscriptionsListener(auth.currentUser, object: FirestoreListener<MutableList<Subscription>> {
             override fun onStart() {
                 // Something
             }
 
             override fun onSuccess(obj: MutableList<Subscription>) {
+                currentSubscriptions = obj
                 for(subscription in obj) {
                     Log.i(TAG, "duva: subsription found = " + subscription.zone + " for user = " + currentUser?.uid)
+                }
+
+            }
+
+            override fun onFailed() {
+                // Something
+            }
+        })
+    }
+
+    private fun setupZones() {
+        Firestore.zonesListener(object: FirestoreListener<MutableList<Zone>> {
+            override fun onStart() {
+                // Something
+            }
+
+            override fun onSuccess(obj: MutableList<Zone>) {
+                allZones = obj
+                for(zone in obj) {
+                    Log.i(TAG, "duva: zone found = " + zone.name)
                 }
             }
 
@@ -201,7 +232,7 @@ class MainActivity : AppCompatActivity(),
         })
     }
 
-    fun setupPermission(permissionString: String) {
+    private fun setupPermission(permissionString: String) {
         val permission = ContextCompat.checkSelfPermission(this, permissionString)
 
         if(permission != PackageManager.PERMISSION_GRANTED) {
@@ -225,7 +256,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    fun makeRequest(permissionString: String) {
+    private fun makeRequest(permissionString: String) {
         var requestCode: Int = 100
 
         when(permissionString) {
@@ -256,5 +287,5 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    fun checkPermission(permissionString: String): Boolean = ContextCompat.checkSelfPermission(this, permissionString) == PackageManager.PERMISSION_GRANTED
+    private fun checkPermission(permissionString: String): Boolean = ContextCompat.checkSelfPermission(this, permissionString) == PackageManager.PERMISSION_GRANTED
 }

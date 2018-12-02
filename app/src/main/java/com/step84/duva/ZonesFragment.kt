@@ -2,17 +2,27 @@ package com.step84.duva
 
 import android.Manifest
 import android.content.Context
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.google.android.gms.common.util.CollectionUtils
 import com.google.android.gms.maps.*
+import com.google.android.gms.maps.model.Circle
+import com.google.android.gms.maps.model.CircleOptions
 import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.firestore.GeoPoint
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
+
+interface GoogleMapInterface {
+    fun onLocationUpdate(location: GeoPoint)
+}
 
 /**
  * A simple [Fragment] subclass.
@@ -23,7 +33,7 @@ private const val ARG_PARAM2 = "param2"
  * create an instance of this fragment.
  *
  */
-class ZonesFragment : Fragment(), OnMapReadyCallback {
+class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
     private var param1: String? = null
     private var param2: String? = null
     private var listener: OnFragmentInteractionListener? = null
@@ -95,10 +105,46 @@ class ZonesFragment : Fragment(), OnMapReadyCallback {
 
     override fun onMapReady(mMap: GoogleMap) {
         val home = LatLng(57.670897, 15.860455)
+        var fillColor: Int
         mMap.isMyLocationEnabled = true
         mMap.uiSettings.isZoomControlsEnabled = true
         mMap.uiSettings.isMyLocationButtonEnabled = true
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(home, 15f))
+        var allZones = (activity as MainActivity).allZones
+        var currentSubscriptions = (activity as MainActivity).currentSubscriptions
+
+        if(allZones != null && currentSubscriptions != null) {
+            for (zone in allZones) {
+                for (subscription in currentSubscriptions) {
+                    if (subscription.zone.equals(zone.id))
+                        zone.subscribed = true
+                }
+            }
+        }
+
+        if(allZones != null) {
+            for(zone in allZones) {
+
+                if(zone.subscribed) {
+                    fillColor = 0x220000FF
+                } else {
+                    fillColor = 0x22FF0000
+                }
+                val circle = mMap.addCircle(
+                    CircleOptions()
+                        .center(LatLng(zone.location.latitude, zone.location.longitude))
+                        .radius(zone.radius)
+                        .strokeColor(Color.BLUE)
+                        .strokeWidth(5f)
+                        .clickable(true)
+                        .fillColor(0x220000FF)
+                )
+            }
+        }
+    }
+
+    override fun onLocationUpdate(location: GeoPoint) {
+        Log.i(TAG, "duva: location changed via interface: lat = " + location.latitude + ", lng = " + location.longitude)
     }
 
     companion object {

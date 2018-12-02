@@ -29,66 +29,62 @@ object Firestore {
      * @param firebaseUser Firebase user object from auth.currentUser
      * @param callback Callback listener
      */
-    fun getUser(firebaseUser: FirebaseUser?, callback: FirestoreListener<User>) {
+    fun userListener(firebaseUser: FirebaseUser?, callback: FirestoreListener<User>) {
         callback.onStart()
         val db = FirebaseFirestore.getInstance()
 
         db.collection(DB_USERS)
             .whereEqualTo(DB_USERS_UID, firebaseUser?.uid)
-            .get()
-            .addOnCompleteListener { task ->
-                if(task.isSuccessful) {
-                    val documents = task.result
-                    if(documents != null) {
-                        val usersFromDb = documents.toObjects(User::class.java)
-                        for(user in usersFromDb) {
-                            if(usersFromDb.size == 1) {
-                                Log.i(TAG, "duva: found one match, usersFromDb = " + user.added + ", " + user.lastLocation)
-                                callback.onSuccess(user)
-                            }
-                        }
-                    }
-                } else {
-                    Log.d(TAG, "duva: Exception: ", task.exception)
+            .addSnapshotListener { querySnapshot, firebaseFirestoreException ->
+                if(firebaseFirestoreException != null) {
+                    Log.d(TAG, "duva: listen failed for userListener: ", firebaseFirestoreException)
                     callback.onFailed()
+                    return@addSnapshotListener
+                }
+
+                if(querySnapshot != null && querySnapshot.size() == 1) {
+                    Log.i(TAG, "duva: user object fetched or updated for user = " + firebaseUser?.uid)
+                    callback.onSuccess(querySnapshot.toObjects(User::class.java)[0])
                 }
             }
     }
 
-    fun getSubscriptions(firebaseUser: FirebaseUser?, callback: FirestoreListener<MutableList<Subscription>>) {
+    fun zonesListener(callback: FirestoreListener<MutableList<Zone>>) {
         callback.onStart()
         val db = FirebaseFirestore.getInstance()
 
-        /*
-        db.collection(DB_SUBSCRIPTIONS)
-            //.whereEqualTo(DB_SUBSCRIPTIONS_ACTIVE, true)
-            .whereEqualTo(DB_SUBSCRIPTIONS_USER, firebaseUser?.uid)
-            .get()
-            .addOnCompleteListener { task ->
-                if(task.isSuccessful) {
-                    val documents = task.result
-                    if(documents != null) {
-                        val subscriptionsFromDb = documents.toObjects(Subscription::class.java)
-                        callback.onSuccess(subscriptionsFromDb)
-                    }
-                } else {
-                    Log.d(TAG, "duva: Exception", task.exception)
+        db.collection(DB_ZONES)
+            //.whereEqualTo()
+            .addSnapshotListener { querySnapshot, firebaseFirestoreException ->
+                if(firebaseFirestoreException != null) {
+                    Log.d(TAG, "duva: listen failed for zonesListener(): ", firebaseFirestoreException)
                     callback.onFailed()
+                    return@addSnapshotListener
+                }
+
+                if(querySnapshot != null) {
+                    Log.i(TAG, "duva: zone fetched or updated = " + querySnapshot.documents.toString())
+                    callback.onSuccess(querySnapshot.toObjects(Zone::class.java))
                 }
             }
-            */
+    }
+
+    fun subscriptionsListener(firebaseUser: FirebaseUser?, callback: FirestoreListener<MutableList<Subscription>>) {
+        callback.onStart()
+        val db = FirebaseFirestore.getInstance()
+
         db.collection(DB_SUBSCRIPTIONS)
             .whereEqualTo(DB_SUBSCRIPTIONS_USER, firebaseUser?.uid)
             .addSnapshotListener { querySnapshot, firebaseFirestoreException ->
                 if(firebaseFirestoreException != null) {
-                    Log.d(TAG, "duva: Listen failed:", firebaseFirestoreException)
+                    Log.d(TAG, "duva: listen failed for subscriptionsListener: ", firebaseFirestoreException)
+                    callback.onFailed()
                     return@addSnapshotListener
                 }
 
                 if(querySnapshot != null) {
                     Log.i(TAG, "duva: subscription fetched or updated for user = " + firebaseUser?.uid)
-                    val subscriptionsFromDb = querySnapshot.toObjects(Subscription::class.java)
-                    callback.onSuccess(subscriptionsFromDb)
+                    callback.onSuccess(querySnapshot.toObjects(Subscription::class.java))
                 }
             }
     }
