@@ -3,12 +3,14 @@ package com.step84.duva
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
-import kotlinx.android.synthetic.main.fragment_home.*
+import android.widget.TextView
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
@@ -23,9 +25,15 @@ private const val ARG_PARAM2 = "param2"
  *
  */
 class HomeFragment : Fragment() {
+    private val TAG = "HomeFragment"
+
     private var param1: String? = null
     private var param2: String? = null
     private var listener: OnFragmentInteractionListener? = null
+
+    private lateinit var auth: FirebaseAuth
+
+    private lateinit var txt_username: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,15 +41,21 @@ class HomeFragment : Fragment() {
             param1 = it.getString(ARG_PARAM1)
             param2 = it.getString(ARG_PARAM2)
         }
+        auth = FirebaseAuth.getInstance()
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        Toast.makeText(context, "Hej", Toast.LENGTH_LONG).show()
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_home, container, false)
+        val view = inflater.inflate(R.layout.fragment_home, container, false)
+
+        txt_username = view.findViewById(R.id.txt_username)
+
+        updateUI(auth.currentUser, (activity as MainActivity).currentUser)
+
+        return view
     }
 
     fun onButtonPressed(uri: Uri) {
@@ -94,5 +108,24 @@ class HomeFragment : Fragment() {
                     putString(ARG_PARAM2, param2)
                 }
             }
+    }
+
+    fun updateUI(firebaseUser: FirebaseUser?, currentUser: User?) {
+        if(firebaseUser == null) {
+            Log.i(TAG, "duva: firebaseUser == null")
+        }
+
+        if(firebaseUser != null) {
+            Log.i(TAG, "duva: firebaseUser is registered")
+            txt_username.text = firebaseUser.email
+
+            if(firebaseUser.isAnonymous) {
+                Log.i(TAG, "duva: firebaseUser is anonymous")
+            }
+
+            if(firebaseUser.isEmailVerified) {
+                Log.i(TAG, "duva: firebaseUser is email verified")
+            }
+        }
     }
 }

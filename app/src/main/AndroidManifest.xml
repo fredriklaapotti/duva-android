@@ -45,5 +45,7 @@
                     android:pathPrefix="/zone" />
             </intent-filter>
         </activity>
+
+        <service android:name=".GeofenceTransitionsIntentService" />
     </application>
 </manifest>

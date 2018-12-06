@@ -1,7 +1,9 @@
 package com.step84.duva
 
 import android.Manifest
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -14,12 +16,9 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
-import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.Task
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.GeoPoint
@@ -35,7 +34,7 @@ class MainActivity : AppCompatActivity(),
     private val requestCodeWriteExternalStorage = 102
 
     var currentUser: User? = null
-    var currentZone: Zone? = null
+    //var currentZone: Zone? = null
     var allZones: MutableList<Zone>? = null
     var currentSubscriptions: MutableList<Subscription>? = null
 
@@ -45,27 +44,34 @@ class MainActivity : AppCompatActivity(),
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
+    private lateinit var geofencingClient: GeofencingClient
+    private var geofenceList: MutableList<Geofence> = mutableListOf()
+    private val geofencePendingIntent: PendingIntent by lazy {
+        val intent = Intent(this, GeofenceTransitionsIntentService::class.java)
+        Log.i(TAG, "duva: geofence starting intent service")
+        PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+    }
 
     private val mOnNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
         when (item.itemId) {
             R.id.navigation_home -> {
-                switchFragment(HomeFragment())
+                switchFragment(HomeFragment(), "HomeFragment")
                 return@OnNavigationItemSelectedListener true
             }
             R.id.navigation_zones -> {
-                switchFragment(ZonesFragment())
+                switchFragment(ZonesFragment(), "ZonesFragment")
                 return@OnNavigationItemSelectedListener true
             }
             R.id.navigation_settings -> {
-                switchFragment(SettingsFragment())
+                switchFragment(SettingsFragment(), "SettingsFragment")
                 return@OnNavigationItemSelectedListener true
             }
         }
         false
     }
 
-    private fun switchFragment(f: Fragment) {
-        supportFragmentManager.beginTransaction().replace(R.id.container, f).commit()
+    private fun switchFragment(f: Fragment, t: String) {
+        supportFragmentManager.beginTransaction().replace(R.id.container, f, t).commit()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,7 +79,7 @@ class MainActivity : AppCompatActivity(),
         setContentView(R.layout.activity_main)
 
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
-        switchFragment(HomeFragment())
+        switchFragment(HomeFragment(), "HomeFragment")
         setupPermission(Manifest.permission.ACCESS_FINE_LOCATION)
         setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
 
@@ -93,6 +99,8 @@ class MainActivity : AppCompatActivity(),
                     Log.d(TAG, "duva: failed to login user", task.exception)
                 }
             }
+
+        geofencingClient = LocationServices.getGeofencingClient(this)
 
         setupUser()
         setupSubscriptions()
@@ -173,7 +181,7 @@ class MainActivity : AppCompatActivity(),
         Log.i(TAG, "Location updates stopped")
     }
 
-    fun setMapListener(listener: GoogleMapInterface) {
+    private fun setMapListener(listener: GoogleMapInterface) {
         this.googleMapInterface = listener
     }
 
@@ -185,6 +193,10 @@ class MainActivity : AppCompatActivity(),
 
             override fun onSuccess(obj: User) {
                 currentUser = obj
+                val fragment = supportFragmentManager.findFragmentByTag("HomeFragment")
+                if(fragment != null && fragment is HomeFragment) {
+                    fragment.updateUI(auth.currentUser, currentUser)
+                }
             }
 
             override fun onFailed() {
@@ -221,15 +233,59 @@ class MainActivity : AppCompatActivity(),
 
             override fun onSuccess(obj: MutableList<Zone>) {
                 allZones = obj
-                for(zone in obj) {
-                    Log.i(TAG, "duva: zone found = " + zone.name)
-                }
+                setupGeofences(obj)
             }
 
             override fun onFailed() {
                 // Something
             }
         })
+    }
+
+    fun setupGeofences(zones: MutableList<Zone>) {
+        for(zone in zones) {
+            Log.i(TAG, "duva: geofence zone found = " + zone.name)
+            geofenceList.add(Geofence.Builder()
+                .setRequestId(zone.name)
+                .setCircularRegion(zone.location.latitude, zone.location.longitude, zone.radius.toFloat())
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
+                .build())
+        }
+
+        Log.i(TAG, "duva: geofence list = " + geofenceList.toString())
+
+        if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            Log.i(TAG, "duva: geofence adding or removing geofences")
+            geofencingClient.addGeofences(getGeofencingRequest(), geofencePendingIntent)?.run {
+                addOnSuccessListener {
+                    Log.i(TAG, "duva: geofence added")
+                }
+                addOnFailureListener {
+                    Log.d(TAG, "duva: failed to add geofence")
+                }
+            }
+
+            // TODO: fix so geofences aren't removed directly at app start
+            /*
+            geofencingClient.removeGeofences(geofencePendingIntent)?.run {
+                addOnSuccessListener {
+                    Log.i(TAG, "duva: geofence removed")
+                }
+                addOnFailureListener {
+                    Log.d(TAG, "duva: failed to remove geofence")
+                }
+            }
+            */
+        }
+    }
+
+    private fun getGeofencingRequest(): GeofencingRequest {
+        Log.i(TAG, "duva: geofence getGeofencingRequest()")
+        return GeofencingRequest.Builder().apply {
+            setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+            addGeofences(geofenceList)
+        }.build()
     }
 
     private fun setupPermission(permissionString: String) {
@@ -257,7 +313,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun makeRequest(permissionString: String) {
-        var requestCode: Int = 100
+        var requestCode = 100
 
         when(permissionString) {
             Manifest.permission.ACCESS_FINE_LOCATION -> requestCode = requestCodeAccessFineLocation

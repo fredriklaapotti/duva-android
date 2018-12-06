@@ -1,11 +1,8 @@
 package com.step84.duva
 
-import android.content.Context
 import android.util.Log
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.EventListener
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.QuerySnapshot
 
 interface FirestoreListener<T> {
     fun onStart()
@@ -18,10 +15,8 @@ object Firestore {
     private const val DB_USERS = "users"
     private const val DB_USERS_UID = "uid"
     private const val DB_SUBSCRIPTIONS = "subscriptions"
-    private const val DB_SUBSCRIPTIONS_ACTIVE = "active"
     private const val DB_SUBSCRIPTIONS_USER = "user"
     private const val DB_ZONES = "zones"
-    private const val DB_ZONES_ID = "zid"
 
     /**
      * Populate user object from database.

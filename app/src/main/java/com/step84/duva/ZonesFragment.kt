@@ -2,6 +2,7 @@ package com.step84.duva
 
 import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -10,11 +11,9 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.google.android.gms.common.util.CollectionUtils
+import androidx.core.content.ContextCompat
 import com.google.android.gms.maps.*
-import com.google.android.gms.maps.model.Circle
-import com.google.android.gms.maps.model.CircleOptions
-import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.*
 import com.google.firebase.firestore.GeoPoint
 
 private const val ARG_PARAM1 = "param1"
@@ -41,7 +40,7 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
     private val TAG = "ZonesFragment"
 
     private var mapView: View? = null
-    private val mMap: GoogleMap? = null
+    //private val mMap: GoogleMap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -105,31 +104,17 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
 
     override fun onMapReady(mMap: GoogleMap) {
         val home = LatLng(57.670897, 15.860455)
-        var fillColor: Int
-        mMap.isMyLocationEnabled = true
-        mMap.uiSettings.isZoomControlsEnabled = true
-        mMap.uiSettings.isMyLocationButtonEnabled = true
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(home, 15f))
-        var allZones = (activity as MainActivity).allZones
-        var currentSubscriptions = (activity as MainActivity).currentSubscriptions
-
-        if(allZones != null && currentSubscriptions != null) {
-            for (zone in allZones) {
-                for (subscription in currentSubscriptions) {
-                    if (subscription.zone.equals(zone.id))
-                        zone.subscribed = true
-                }
-            }
+        val markers: MutableList<Marker> = mutableListOf()
+        if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            mMap.isMyLocationEnabled = true
+            mMap.uiSettings.isZoomControlsEnabled = true
+            mMap.uiSettings.isMyLocationButtonEnabled = true
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(home, 15f))
         }
+        val allZones = (activity as MainActivity).allZones
 
         if(allZones != null) {
             for(zone in allZones) {
-
-                if(zone.subscribed) {
-                    fillColor = 0x220000FF
-                } else {
-                    fillColor = 0x22FF0000
-                }
                 val circle = mMap.addCircle(
                     CircleOptions()
                         .center(LatLng(zone.location.latitude, zone.location.longitude))
@@ -139,6 +124,14 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
                         .clickable(true)
                         .fillColor(0x220000FF)
                 )
+                val marker = mMap.addMarker(
+                    MarkerOptions()
+                        .position(LatLng(zone.location.latitude, zone.location.longitude))
+                        .alpha(0f)
+                        .title(zone.name)
+                        .snippet(getString(R.string.map_desc_radius) + ": " + zone.radius)
+                )
+                markers.add(marker)
             }
         }
     }
@@ -165,4 +158,6 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
                 }
             }
     }
+
+    private fun checkPermission(permissionString: String): Boolean = ContextCompat.checkSelfPermission(context!!, permissionString) == PackageManager.PERMISSION_GRANTED
 }
