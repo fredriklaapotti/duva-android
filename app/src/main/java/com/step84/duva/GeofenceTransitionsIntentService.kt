@@ -4,17 +4,12 @@ import android.app.IntentService
 import android.content.Intent
 import android.text.TextUtils
 import android.util.Log
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingEvent
 
 class GeofenceTransitionsIntentService : IntentService("GeofenceTransitionsIntentService") {
     private val TAG = "GeofenceTransitionsIntentService"
-
-    /*
-    override fun onCreate() {
-        super.onCreate()
-    }
-    */
 
     override fun onHandleIntent(intent: Intent?) {
         Log.i(TAG, "duva: geofence in onHandleIntent()")
@@ -25,14 +20,22 @@ class GeofenceTransitionsIntentService : IntentService("GeofenceTransitionsInten
         }
 
         val geofenceTransition = geofencingEvent.geofenceTransition
+        val triggeringGeofences = geofencingEvent.triggeringGeofences
+        val geofenceTransitionDetails = getGeofenceTransitionDetails(geofenceTransition, triggeringGeofences)
 
-        if(geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER || geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
-            val triggeringGeofences = geofencingEvent.triggeringGeofences
-            val geofenceTransitionDetails = getGeofenceTransitionDetails(geofenceTransition, triggeringGeofences)
-            Log.i(TAG, "duva: geofence $geofenceTransitionDetails")
-        } else {
-            Log.d(TAG, "duva: geofence unknown trigger")
+        val broadcastString = when(geofenceTransition) {
+            Geofence.GEOFENCE_TRANSITION_ENTER -> "com.step84.duva.GEOFENCE_ENTER"
+            Geofence.GEOFENCE_TRANSITION_EXIT -> "com.step84.duva.GEOFENCE_EXIT"
+            Geofence.GEOFENCE_TRANSITION_DWELL -> "com.step84.duva.GEOFENCE_DWELL"
+            else -> "com.step84.duva.GEOFENCE_UNKNOWN"
         }
+
+        val broadcastIntent = Intent(broadcastString).apply {
+            putExtra("zoneid", triggeringGeofences[0].requestId.toString())
+        }
+
+        LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastIntent)
+        Log.i(TAG, "duva: geofence $geofenceTransitionDetails")
     }
 
     private fun getGeofenceTransitionDetails(geofenceTransition: Int, triggeringGeofences: MutableList<Geofence>): String {

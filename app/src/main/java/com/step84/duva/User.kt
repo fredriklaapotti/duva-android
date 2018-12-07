@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.GeoPoint
 
 data class User(
+    var id: String = "0",
     var uid: String = "0",
     var added: Timestamp = Timestamp.now(),
     var lastUpdate: Timestamp = Timestamp.now(),

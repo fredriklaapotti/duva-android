@@ -2,9 +2,7 @@ package com.step84.duva
 
 import android.Manifest
 import android.app.PendingIntent
-import android.content.Context
-import android.content.Intent
-import android.content.IntentSender
+import android.content.*
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
@@ -14,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.tasks.Task
@@ -70,6 +69,19 @@ class MainActivity : AppCompatActivity(),
         false
     }
 
+    private val br = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            Log.i(TAG, "duva: geofence received intent in onReceive()")
+            when(intent?.action) {
+                "com.step84.duva.GEOFENCE_ENTER" -> geofenceTransition("enter", intent.extras!!.getString("zoneid", "0"))
+                "com.step84.duva.GEOFENCE_EXIT" -> geofenceTransition("exit", intent.extras!!.getString("zoneid", "0"))
+            }
+        }
+    }
+
+    //private val br: BroadcastReceiver? = null
+    private val filter = IntentFilter("com.step84.duva.GEOFENCE_ENTER").apply {}
+
     private fun switchFragment(f: Fragment, t: String) {
         supportFragmentManager.beginTransaction().replace(R.id.container, f, t).commit()
     }
@@ -102,6 +114,9 @@ class MainActivity : AppCompatActivity(),
 
         geofencingClient = LocationServices.getGeofencingClient(this)
 
+        //LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, IntentFilter("com.step84.duva.GEOFENCE_ENTER"))
+        LocalBroadcastManager.getInstance(this).registerReceiver(br, filter)
+
         setupUser()
         setupSubscriptions()
         setupZones()
@@ -127,6 +142,12 @@ class MainActivity : AppCompatActivity(),
     override fun onPause() {
         super.onPause()
         stopLocationUpdates()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        //LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
+        unregisterReceiver(br)
     }
 
     private fun startLocationUpdates() {
@@ -167,10 +188,7 @@ class MainActivity : AppCompatActivity(),
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
                 for(location in locationResult.locations) {
-                    //var fragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
-                    googleMapInterface?.onLocationUpdate(GeoPoint(location.latitude, location.longitude))
-                    //currentUser?.lastLocation = GeoPoint(location.latitude, location.longitude)
-                    //Log.i(TAG, "duva: currentUser?.lastLocation = " + currentUser?.lastLocation.toString())
+                    //googleMapInterface?.onLocationUpdate(GeoPoint(location.latitude, location.longitude))
                 }
             }
         }
@@ -246,7 +264,7 @@ class MainActivity : AppCompatActivity(),
         for(zone in zones) {
             Log.i(TAG, "duva: geofence zone found = " + zone.name)
             geofenceList.add(Geofence.Builder()
-                .setRequestId(zone.name)
+                .setRequestId(zone.id)
                 .setCircularRegion(zone.location.latitude, zone.location.longitude, zone.radius.toFloat())
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
@@ -277,6 +295,7 @@ class MainActivity : AppCompatActivity(),
                 }
             }
             */
+
         }
     }
 
@@ -286,6 +305,13 @@ class MainActivity : AppCompatActivity(),
             setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
             addGeofences(geofenceList)
         }.build()
+    }
+
+    private fun geofenceTransition(transition: String, zoneid: String) {
+        when(transition) {
+            "enter" -> Log.i(TAG, "duva: geofence geofenceTransition() enter in MainActivity: $zoneid")
+            "exit" -> Log.i(TAG, "duva: geofence geofenceTransition() exit in MainActivity: $zoneid")
+        }
     }
 
     private fun setupPermission(permissionString: String) {
