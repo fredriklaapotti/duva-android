@@ -30,9 +30,13 @@ class GeofenceTransitionsIntentService : IntentService("GeofenceTransitionsInten
             else -> "com.step84.duva.GEOFENCE_UNKNOWN"
         }
 
+        Log.i(TAG, "duva: geofence broadcastString == $broadcastString")
+
         val broadcastIntent = Intent(broadcastString).apply {
             putExtra("zoneid", triggeringGeofences[0].requestId.toString())
         }
+
+        Log.i(TAG, "duva: geofence broadcastIntent = $broadcastIntent")
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastIntent)
         Log.i(TAG, "duva: geofence $geofenceTransitionDetails")

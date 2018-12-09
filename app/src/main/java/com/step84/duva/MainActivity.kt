@@ -17,6 +17,7 @@ import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.tasks.Task
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
@@ -33,9 +34,9 @@ class MainActivity : AppCompatActivity(),
     private val requestCodeWriteExternalStorage = 102
 
     var currentUser: User? = null
-    //var currentZone: Zone? = null
-    var allZones: MutableList<Zone>? = null
     var currentSubscriptions: MutableList<Subscription>? = null
+    var currentLocation: GeoPoint? = null
+    var allZones: MutableList<Zone>? = null
 
     private lateinit var auth: FirebaseAuth
 
@@ -71,7 +72,7 @@ class MainActivity : AppCompatActivity(),
 
     private val br = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            Log.i(TAG, "duva: geofence received intent in onReceive()")
+            Log.i(TAG, "duva: geofence received intent in onReceive() in MainActivity")
             when(intent?.action) {
                 "com.step84.duva.GEOFENCE_ENTER" -> geofenceTransition("enter", intent.extras!!.getString("zoneid", "0"))
                 "com.step84.duva.GEOFENCE_EXIT" -> geofenceTransition("exit", intent.extras!!.getString("zoneid", "0"))
@@ -79,8 +80,10 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    //private val br: BroadcastReceiver? = null
-    private val filter = IntentFilter("com.step84.duva.GEOFENCE_ENTER").apply {}
+    private val filter = IntentFilter("com.step84.duva.GEOFENCE_ENTER").apply {
+        addAction("com.step84.duva.GEOFENCE_EXIT")
+        addAction("com.step84.duva.GEOFENCE_DWELL")
+    }
 
     private fun switchFragment(f: Fragment, t: String) {
         supportFragmentManager.beginTransaction().replace(R.id.container, f, t).commit()
@@ -114,7 +117,6 @@ class MainActivity : AppCompatActivity(),
 
         geofencingClient = LocationServices.getGeofencingClient(this)
 
-        //LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, IntentFilter("com.step84.duva.GEOFENCE_ENTER"))
         LocalBroadcastManager.getInstance(this).registerReceiver(br, filter)
 
         setupUser()
@@ -137,10 +139,22 @@ class MainActivity : AppCompatActivity(),
     override fun onResume() {
         super.onResume()
         startLocationUpdates()
+        if(auth.currentUser != null && currentUser != null && currentLocation != null) {
+            Firestore.updateField("users", currentUser!!.id, "lastLocation", currentLocation, object: FirestoreCallback {
+                override fun onSuccess() {}
+                override fun onFailed() {}
+            })
+        }
     }
 
     override fun onPause() {
         super.onPause()
+        if(auth.currentUser != null && currentUser != null && currentLocation != null) {
+            Firestore.updateField("users", currentUser!!.id, "lastLocation", currentLocation, object: FirestoreCallback {
+                override fun onSuccess() {}
+                override fun onFailed() {}
+            })
+        }
         stopLocationUpdates()
     }
 
@@ -188,6 +202,7 @@ class MainActivity : AppCompatActivity(),
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
                 for(location in locationResult.locations) {
+                    currentLocation = GeoPoint(location.latitude, location.longitude)
                     //googleMapInterface?.onLocationUpdate(GeoPoint(location.latitude, location.longitude))
                 }
             }
@@ -307,11 +322,52 @@ class MainActivity : AppCompatActivity(),
         }.build()
     }
 
+    // TODO: this might trigger uncorrectly since it receives zone[0] id. Fix, sometime.
     private fun geofenceTransition(transition: String, zoneid: String) {
-        when(transition) {
-            "enter" -> Log.i(TAG, "duva: geofence geofenceTransition() enter in MainActivity: $zoneid")
-            "exit" -> Log.i(TAG, "duva: geofence geofenceTransition() exit in MainActivity: $zoneid")
+        Log.i(TAG, "duva: geofence received geofenceTransition($transition, $zoneid)")
+        var subscriptionid: String = getSubscriptionidFromZoneid(zoneid)
+        if(subscriptionid != "null") {
+            when(transition) {
+                "enter" -> {
+                    Log.i(TAG, "duva: geofence geofenceTransition() enter in MainActivity: $zoneid")
+                    Firestore.updateField("subscriptions", subscriptionid, "active", true, object: FirestoreCallback {
+                        override fun onSuccess() {}
+                        override fun onFailed() {}
+                    })
+
+                    if(auth.currentUser != null && currentUser != null) {
+                        Firestore.updateField("users", currentUser!!.id, "lastZone", zoneid, object: FirestoreCallback {
+                            override fun onSuccess() {}
+                            override fun onFailed() {}
+                        })
+                    }
+                }
+                "exit" -> {
+                    Log.i(TAG, "duva: geofence geofenceTransition() exit in MainActivity: $zoneid")
+                    Firestore.updateField("subscriptions", subscriptionid, "active", false, object: FirestoreCallback {
+                        override fun onSuccess() {}
+                        override fun onFailed() {}
+                    })
+                }
+            }
         }
+    }
+
+    private fun getSubscriptionidFromZoneid(zoneid: String): String {
+        var subscriptionid: String = "null"
+
+        for(subscription in currentSubscriptions!!) {
+            if(zoneid == subscription.zone) {
+                Log.i(TAG, "duva: found match in getSubscriptionFromZoneid: $zoneid == ${subscription.zone}")
+                subscriptionid = subscription.id
+            }
+        }
+
+        if(subscriptionid == "null") {
+            Log.d(TAG, "duva: no match found in getSubscriptionFromZoneid: $zoneid")
+        }
+
+        return subscriptionid
     }
 
     private fun setupPermission(permissionString: String) {

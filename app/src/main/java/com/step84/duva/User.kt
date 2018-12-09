@@ -8,5 +8,6 @@ data class User(
     var uid: String = "0",
     var added: Timestamp = Timestamp.now(),
     var lastUpdate: Timestamp = Timestamp.now(),
-    var lastLocation: GeoPoint = GeoPoint(0.0, 0.0)
+    var lastLocation: GeoPoint = GeoPoint(0.0, 0.0),
+    var lastZone: String = "0"
 )
