@@ -7,6 +7,10 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.Toast
+import com.firebase.ui.auth.AuthUI
+import com.google.firebase.auth.FirebaseAuth
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
@@ -25,12 +29,22 @@ class SettingsFragment : Fragment() {
     private var param2: String? = null
     private var listener: OnFragmentInteractionListener? = null
 
+    private lateinit var auth: FirebaseAuth
+    private lateinit var btn_signIn: Button
+    private lateinit var btn_signOut: Button
+
+    private val providers = arrayListOf(
+        AuthUI.IdpConfig.EmailBuilder().build(),
+        AuthUI.IdpConfig.GoogleBuilder().build()
+    )
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
             param1 = it.getString(ARG_PARAM1)
             param2 = it.getString(ARG_PARAM2)
         }
+        auth = FirebaseAuth.getInstance()
     }
 
     override fun onCreateView(
@@ -38,7 +52,42 @@ class SettingsFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_settings, container, false)
+        val view = inflater.inflate(R.layout.fragment_settings, container, false)
+
+        btn_signIn = view.findViewById(R.id.btn_signIn)
+        btn_signOut = view.findViewById(R.id.btn_signout)
+
+        if(auth.currentUser == null) {
+            btn_signIn.visibility = View.VISIBLE
+            btn_signOut.visibility = View.INVISIBLE
+        } else {
+            btn_signIn.visibility = View.INVISIBLE
+            btn_signOut.visibility = View.VISIBLE
+        }
+
+        btn_signIn.setOnClickListener {
+            Toast.makeText(activity, "Sign in...", Toast.LENGTH_LONG).show()
+            startActivityForResult(
+                AuthUI.getInstance()
+                    .createSignInIntentBuilder()
+                    .setAvailableProviders(providers)
+                    .build(),
+                200)
+            btn_signIn.visibility = View.INVISIBLE
+            btn_signOut.visibility = View.VISIBLE
+        }
+
+        btn_signOut.setOnClickListener {
+            AuthUI.getInstance()
+                .signOut(context!!)
+                .addOnCompleteListener {
+                    Toast.makeText(activity, "Signed out", Toast.LENGTH_LONG).show()
+                    btn_signIn.visibility = View.VISIBLE
+                    btn_signOut.visibility = View.INVISIBLE
+                }
+        }
+
+        return view
     }
 
     fun onButtonPressed(uri: Uri) {

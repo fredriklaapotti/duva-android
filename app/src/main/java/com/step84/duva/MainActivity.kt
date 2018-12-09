@@ -105,24 +105,12 @@ class MainActivity : AppCompatActivity(),
         firestore.firestoreSettings = settings
 
         auth = FirebaseAuth.getInstance()
-
-        auth.signInWithEmailAndPassword("fredrik.laapotti@gmail.com", "password")
-            .addOnCompleteListener(this) { task ->
-                if(task.isSuccessful) {
-                    Log.i(TAG, "duva: user logged in")
-                } else {
-                    Log.d(TAG, "duva: failed to login user", task.exception)
-                }
-            }
-
         geofencingClient = LocationServices.getGeofencingClient(this)
-
         LocalBroadcastManager.getInstance(this).registerReceiver(br, filter)
 
         setupUser()
         setupSubscriptions()
         setupZones()
-
         setMapListener(ZonesFragment())
 
         Log.i(TAG, "duva: currentUser object in MainActivity = " + currentUser?.lastLocation) // Should return null
@@ -162,6 +150,15 @@ class MainActivity : AppCompatActivity(),
         super.onDestroy()
         //LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
         unregisterReceiver(br)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        Log.i(TAG, "duva: in onActivityResult")
+
+        if(requestCode == 200) {
+            Log.i(TAG, "duva: requestCode == 200 in onActivityResult")
+        }
     }
 
     private fun startLocationUpdates() {
@@ -325,6 +322,11 @@ class MainActivity : AppCompatActivity(),
     // TODO: this might trigger uncorrectly since it receives zone[0] id. Fix, sometime.
     private fun geofenceTransition(transition: String, zoneid: String) {
         Log.i(TAG, "duva: geofence received geofenceTransition($transition, $zoneid)")
+
+        if(auth.currentUser == null) {
+            return
+        }
+
         var subscriptionid: String = getSubscriptionidFromZoneid(zoneid)
         if(subscriptionid != "null") {
             when(transition) {
@@ -355,6 +357,9 @@ class MainActivity : AppCompatActivity(),
 
     private fun getSubscriptionidFromZoneid(zoneid: String): String {
         var subscriptionid: String = "null"
+        if(auth.currentUser == null) {
+            return "null"
+        }
 
         for(subscription in currentSubscriptions!!) {
             if(zoneid == subscription.zone) {
