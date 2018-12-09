@@ -105,4 +105,22 @@ object Firestore {
                 callback.onFailed()
             }
     }
+
+    fun <T> updateFieldTransactional(dbcollection: String, document: String, fieldvalues: MutableMap<String, T>, callback: FirestoreCallback) {
+        val db = FirebaseFirestore.getInstance()
+        val ref = db.collection(dbcollection).document(document)
+
+        db.runTransaction { transaction ->
+            for((key, value) in fieldvalues) {
+                Log.i(TAG, "duva: firestore adding $key:$value to transactional update")
+                transaction.update(ref, key, value)
+            }
+        }.addOnSuccessListener {
+            Log.i(TAG, "duva: firestore successfully updated field transaction")
+            callback.onSuccess()
+        }.addOnFailureListener { e ->
+            Log.d(TAG, "duva: firestore failed to update field transaction", e)
+            callback.onFailed()
+        }
+    }
 }

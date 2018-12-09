@@ -11,10 +11,13 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.*
 import androidx.core.content.ContextCompat
 import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.*
 import com.google.firebase.firestore.GeoPoint
+import kotlinx.android.synthetic.main.fragment_home.*
+import kotlinx.android.synthetic.main.fragment_zones.*
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
@@ -40,6 +43,15 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
     private val TAG = "ZonesFragment"
 
     private var mapView: View? = null
+    private lateinit var txt_clickedZone: TextView
+
+    private lateinit var switch_settingNotice: Switch
+    private lateinit var switch_settingOverrideSound: Switch
+
+    private lateinit var switch_larmPreset: Switch
+    private lateinit var switch_larmSoundRecording: Switch
+    private lateinit var switch_larmVideo: Switch
+    private lateinit var btn_updateSettings: Button
     //private val mMap: GoogleMap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +67,74 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_zones, container, false)
+        val view = inflater.inflate(R.layout.fragment_zones, container, false)
+
+        txt_clickedZone = view.findViewById(R.id.txt_clickedZone)
+        btn_updateSettings = view.findViewById(R.id.btn_updateSettings)
+
+        switch_settingNotice = view.findViewById(R.id.switch_settingNotice)
+        switch_settingOverrideSound = view.findViewById(R.id.switch_settingOverrideSound)
+
+        switch_larmPreset = view.findViewById(R.id.switch_larmPreset)
+        switch_larmSoundRecording = view.findViewById(R.id.switch_larmSoundRecording)
+        switch_larmVideo = view.findViewById(R.id.switch_larmVideo)
+
+        switch_settingNotice.isClickable = false
+        switch_settingOverrideSound.isClickable = false
+        switch_larmPreset.isClickable = false
+        switch_larmSoundRecording.isClickable = false
+        switch_larmVideo.isClickable = false
+
+        btn_updateSettings.setOnClickListener {
+            if(switch_settingNotice.tag != null && switch_settingOverrideSound.tag != null && btn_updateSettings.tag != null) {
+                val subscription: Subscription = switch_settingNotice.tag as Subscription
+                var fieldvalues: MutableMap<String, Boolean> = mutableMapOf()
+                fieldvalues["setting_alarm_notice"] = switch_settingNotice.isChecked
+                fieldvalues["setting_alarm_override_sound"]  = switch_settingOverrideSound.isChecked
+                Firestore.updateFieldTransactional("subscriptions", subscription.id, fieldvalues, object: FirestoreCallback {
+                    override fun onSuccess() {}
+                    override fun onFailed() {}
+                })
+            }
+        }
+
+        /*
+        switch_settingNotice.setOnCheckedChangeListener { _, isChecked ->
+            if(switch_settingNotice.tag != null) {
+                val subscription: Subscription = switch_settingNotice.tag as Subscription
+                if(isChecked) {
+                    Firestore.updateField("subscriptions", subscription.id, "setting_alarm_notice", true, object: FirestoreCallback {
+                        override fun onSuccess() {}
+                        override fun onFailed() {}
+                    })
+                } else {
+                    Firestore.updateField("subscriptions", subscription.id, "setting_alarm_notice", false, object: FirestoreCallback {
+                        override fun onSuccess() {}
+                        override fun onFailed() {}
+                    })
+                }
+            }
+        }
+
+        switch_settingOverrideSound.setOnCheckedChangeListener { _, isChecked ->
+            if(switch_settingOverrideSound.tag != null) {
+                val subscription: Subscription = switch_settingOverrideSound.tag as Subscription
+                if(isChecked) {
+                    Firestore.updateField("subscriptions", subscription.id, "setting_alarm_override_sound", true, object: FirestoreCallback {
+                        override fun onSuccess() {}
+                        override fun onFailed() {}
+                    })
+                } else {
+                    Firestore.updateField("subscriptions", subscription.id, "setting_alarm_override_sound", false, object: FirestoreCallback {
+                        override fun onSuccess() {}
+                        override fun onFailed() {}
+                    })
+                }
+            }
+        }
+        */
+
+        return view
     }
 
     fun onButtonPressed(uri: Uri) {
@@ -104,12 +183,16 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
 
     override fun onMapReady(mMap: GoogleMap) {
         val home = LatLng(57.670897, 15.860455)
+        var currentLocation = (activity as MainActivity).currentLocation
         val markers: MutableList<Marker> = mutableListOf()
         if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
             mMap.isMyLocationEnabled = true
             mMap.uiSettings.isZoomControlsEnabled = true
             mMap.uiSettings.isMyLocationButtonEnabled = true
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(home, 15f))
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(currentLocation!!.latitude, currentLocation.longitude), 15f))
+            mMap.setOnCircleClickListener {
+                onCircleClick(it, mMap)
+            }
         }
         val allZones = (activity as MainActivity).allZones
 
@@ -123,7 +206,10 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
                         .strokeWidth(5f)
                         .clickable(true)
                         .fillColor(0x220000FF)
+                        .clickable(true)
                 )
+                circle.tag = zone
+                /*
                 val marker = mMap.addMarker(
                     MarkerOptions()
                         .position(LatLng(zone.location.latitude, zone.location.longitude))
@@ -132,12 +218,40 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
                         .snippet(getString(R.string.map_desc_radius) + ": " + zone.radius)
                 )
                 markers.add(marker)
+                */
             }
         }
     }
 
     override fun onLocationUpdate(location: GeoPoint) {
         Log.i(TAG, "duva: location changed via interface: lat = " + location.latitude + ", lng = " + location.longitude)
+    }
+
+    private fun onCircleClick(circle: Circle, mMap: GoogleMap) {
+        val zone: Zone = circle.tag as Zone
+
+        for(subscription in (activity as MainActivity).currentSubscriptions!!) {
+            if(subscription.zone == zone.id) {
+                switch_settingNotice.isClickable = true
+                switch_settingOverrideSound.isClickable = true
+
+                switch_settingNotice.tag = subscription
+                switch_settingOverrideSound.tag = subscription
+                btn_updateSettings.tag = subscription
+
+                txt_clickedZone.text = zone.name
+
+                switch_settingNotice.isChecked = subscription.setting_alarm_notice
+                switch_settingOverrideSound.isChecked = subscription.setting_alarm_override_sound
+
+                switch_larmPreset.isChecked = subscription.permission_larm_preset
+                switch_larmSoundRecording.isChecked = subscription.permission_larm_soundrecording
+                switch_larmVideo.isChecked = subscription.permission_larm_video
+
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(zone.location.latitude, zone.location.longitude), 15f))
+
+            }
+        }
     }
 
     companion object {
