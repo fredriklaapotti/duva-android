@@ -7,18 +7,31 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
     <string name="txt_desc_username">Logged in as:</string>
-    <string name="txt_username">username placeholder</string>
+    <string name="txt_username">not logged in</string>
     <string name="txt_desc_currentZone">Current zone:</string>
-    <string name="txt_currentZone">currentZone placeholder</string>
+    <string name="txt_currentZone">no zone detected</string>
     <string name="btn_desc_larmRecord">Larm record button</string>
     <string name="permission_button_ok">OK</string>
     <string name="permission_title">Permission required</string>
     <string name="permission_location_message">Permission to access location is required for this app</string>
     <string name="permission_ACCESS_FINE_LOCATION">Permission to access location is required</string>
     <string name="permission_WRITE_EXTERNAL_STORAGE">Permission to write to shared storage is required</string>
+    <string name="permission_RECORD_AUDIO">Permission to record audio is required</string>
 
     <string name="map_desc_radius">Radius</string>
 
     <string name="btn_signin">Sign in (E-mail or Google)</string>
     <string name="btn_signout">Sign out</string>
+
+    <string name="toast_notLoggedIn">Login to access settings</string>
+    <string name="toast_updateZoneSuccess">Settings updated</string>
+    <string name="toast_updateZoneFailed">Failed to update settings</string>
+
+    <string name="btn_updateSettings">Update settings</string>
+    <string name="txt_clickedZone">Click on zone circle in map for settings</string>
+    <string name="switch_permission_larm_preset">Permission: larm w/ preset</string>
+    <string name="switch_permission_larm_soundRecording">Permission: larm w/ audio</string>
+    <string name="switch_permission_larm_video">Permission: larm w/ video</string>
+    <string name="switch_setting_notice">Setting: notice on alarm</string>
+    <string name="switch_setting_override_sound">Setting: alarms overrides sound</string>
 </resources>

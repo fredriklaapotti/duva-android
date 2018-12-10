@@ -106,7 +106,7 @@ object Firestore {
             }
     }
 
-    fun <T> updateFieldTransactional(dbcollection: String, document: String, fieldvalues: MutableMap<String, T>, callback: FirestoreCallback) {
+    fun <T> transactionUpdate(dbcollection: String, document: String, fieldvalues: MutableMap<String, T>, callback: FirestoreCallback) {
         val db = FirebaseFirestore.getInstance()
         val ref = db.collection(dbcollection).document(document)
 
@@ -122,5 +122,26 @@ object Firestore {
             Log.d(TAG, "duva: firestore failed to update field transaction", e)
             callback.onFailed()
         }
+    }
+
+    fun <T> batchUpdate(dbcollection: String, document: String, fieldValues: MutableMap<String, T>, callback: FirestoreCallback) {
+        val db = FirebaseFirestore.getInstance()
+        val ref = db.collection(dbcollection).document(document)
+        val batch = db.batch()
+
+        for((key, value) in fieldValues) {
+            Log.i(TAG, "duva: firestore adding $key:$value to batchUpdate")
+            batch.update(ref, key, value)
+        }
+
+        batch.commit()
+            .addOnSuccessListener {
+                Log.i(TAG, "duva: firestore successfully commited batch update")
+                callback.onSuccess()
+            }
+            .addOnFailureListener {
+                Log.i(TAG, "duva: firestore failed to commit batch update")
+                callback.onFailed()
+            }
     }
 }

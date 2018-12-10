@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
                 xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -9,21 +10,22 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:layout_marginStart="50dp"
-            android:layout_alignParentTop="true"
+            android:layout_marginStart="79dp"
             android:id="@+id/txt_desc_username"
-            android:layout_marginTop="120dp"
-            android:text="@string/txt_desc_username"/>
+            android:layout_marginTop="26dp"
+            android:text="@string/txt_desc_username"
+            android:layout_below="@+id/txt_appName"
+            android:textStyle="bold"/>
 
     <TextView
             android:text="@string/txt_username"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_toEndOf="@+id/txt_desc_username"
-            android:layout_alignTop="@+id/txt_desc_username"
             android:id="@+id/txt_username"
-            android:layout_marginTop="0dp"
-            android:layout_marginStart="25dp"/>
+            android:layout_marginTop="26dp"
+            android:layout_marginStart="11dp"
+            android:layout_below="@+id/txt_appName"/>
 
     <TextView
             android:text="@string/txt_desc_currentZone"
@@ -32,7 +34,8 @@
             android:id="@+id/txt_desc_currentZone"
             android:layout_marginTop="10dp"
             android:layout_alignStart="@+id/txt_desc_username"
-            android:layout_below="@+id/txt_desc_username"/>
+            android:layout_below="@+id/txt_desc_username"
+            android:textStyle="bold"/>
 
     <TextView
             android:text="@string/txt_currentZone"
@@ -42,7 +45,7 @@
             android:layout_marginTop="10dp"
             android:layout_below="@+id/txt_username"
             android:layout_toEndOf="@+id/txt_desc_currentZone"
-            android:layout_marginStart="25dp"/>
+            android:layout_marginStart="10dp"/>
 
     <ImageButton
             android:src="@drawable/btn_record"
@@ -51,19 +54,44 @@
             android:layout_centerHorizontal="true"
             android:layout_alignParentBottom="true"
             android:id="@+id/btn_larmRecord"
-            android:background="@android:color/transparent"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:layout_marginBottom="145dp"
             android:scaleType="fitCenter"
             android:contentDescription="@string/btn_desc_larmRecord"/>
 
     <ProgressBar
-            style="?android:attr/progressBarStyleHorizontal"
+            style="@android:style/Widget.ProgressBar.Horizontal"
             android:layout_width="180dp"
             android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
             android:layout_alignParentBottom="true"
-            android:id="@+id/bar_progress"
-            android:scaleY="5"
-            android:layout_marginBottom="280dp"/>
+            android:id="@+id/bar_progressSoundRecording"
+            android:layout_marginBottom="305dp"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="90dp"
+            />
+
+    <ImageView
+            android:src="@mipmap/ic_duva_icon"
+            android:layout_width="48dp"
+            android:layout_height="43dp"
+            android:id="@+id/img_duvaIcon"
+            android:layout_alignEnd="@+id/btn_larmRecord"
+            android:layout_marginStart="103dp"
+            android:layout_marginEnd="93dp"
+            android:layout_alignBottom="@+id/txt_appName"
+            android:layout_marginBottom="-2dp"
+            android:layout_alignParentStart="true"/>
+
+    <TextView
+            android:text="@string/app_name"
+            android:layout_width="93dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="153dp"
+            android:id="@+id/txt_appName"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:layout_marginTop="38dp"
+            android:layout_alignParentTop="true"/>
 
 </RelativeLayout>

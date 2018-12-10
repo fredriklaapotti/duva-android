@@ -1,16 +1,31 @@
 package com.step84.duva
 
 import android.content.Context
+import android.media.MediaPlayer
+import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Bundle
+import android.os.CountDownTimer
+import android.os.Environment
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.Animation
+import android.view.animation.AnimationSet
+import android.view.animation.AnimationUtils
+import android.view.animation.RotateAnimation
+import android.widget.Button
+import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.TextView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import io.opencensus.stats.Aggregation
+import kotlinx.android.synthetic.main.fragment_home.*
+import java.io.IOException
+import java.lang.IllegalStateException
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
@@ -26,6 +41,8 @@ private const val ARG_PARAM2 = "param2"
  */
 class HomeFragment : Fragment() {
     private val TAG = "HomeFragment"
+    private val SOUND_RECORDING_MAX_LENGTH: Long = 25 * 1000
+    private val SOUND_RECORDING_TICK: Long = 1 * 1000
 
     private var param1: String? = null
     private var param2: String? = null
@@ -34,6 +51,21 @@ class HomeFragment : Fragment() {
     private lateinit var auth: FirebaseAuth
 
     private lateinit var txt_username: TextView
+    private lateinit var btn_larmRecord: ImageButton
+    private lateinit var progress_soundRecording: ProgressBar
+
+    enum class TimerState {
+        Stopped, Paused, Running
+    }
+
+    private var recording: Boolean = false
+    private lateinit var timer: CountDownTimer
+    private var timerState = TimerState.Stopped
+
+    private val audioRecorder: MediaRecorder = MediaRecorder()
+    private val mediaPlayer: MediaPlayer = MediaPlayer()
+    private lateinit var audioOutputFile: String
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +74,7 @@ class HomeFragment : Fragment() {
             param2 = it.getString(ARG_PARAM2)
         }
         auth = FirebaseAuth.getInstance()
+        audioOutputFile = Environment.getExternalStorageDirectory().absolutePath + "/duva_audioOutputFile.3gp"
     }
 
     override fun onCreateView(
@@ -52,6 +85,22 @@ class HomeFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
 
         txt_username = view.findViewById(R.id.txt_username)
+        btn_larmRecord = view.findViewById(R.id.btn_larmRecord)
+        progress_soundRecording = view.findViewById(R.id.bar_progressSoundRecording)
+        progress_soundRecording.visibility = View.INVISIBLE
+
+        btn_larmRecord.setOnClickListener {
+            when (recording) {
+                true -> {
+                    toggleLarmSoundRecording()
+                }
+                false -> {
+                    toggleLarmSoundRecording()
+                    val rotateAnimation: Animation = AnimationUtils.loadAnimation(context!!, R.anim.blink)
+                    btn_larmRecord.startAnimation(rotateAnimation)
+                }
+            }
+        }
 
         updateUI(auth.currentUser, (activity as MainActivity).currentUser)
 
@@ -74,6 +123,18 @@ class HomeFragment : Fragment() {
     override fun onDetach() {
         super.onDetach()
         listener = null
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if(recording) {
+            audioRecorder.stop()
+            audioRecorder.reset()
+            recording = false
+            btn_larmRecord.clearAnimation()
+            timer.cancel()
+            progress_soundRecording.visibility = View.INVISIBLE
+        }
     }
 
     /**
@@ -108,6 +169,74 @@ class HomeFragment : Fragment() {
                     putString(ARG_PARAM2, param2)
                 }
             }
+    }
+
+    private fun toggleLarmSoundRecording() {
+        if(!recording) {
+            // Start recording, catch audio
+            Log.i(TAG, "duva: larm recording is true, starting audio recording")
+            audioRecorder.reset()
+            audioRecorder.setAudioSource(MediaRecorder.AudioSource.MIC)
+            audioRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+            audioRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+            audioRecorder.setOutputFile(audioOutputFile)
+
+            try {
+                Log.i(TAG, "duva: larm calling prepare() and start() on audio")
+                audioRecorder.prepare()
+                audioRecorder.start()
+                recording = true
+                progress_soundRecording.visibility = View.VISIBLE
+                progress_soundRecording.progress = 0
+                startTimer()
+            } catch (ise: IllegalStateException) {
+                Log.d(TAG, "duva: larm failed calling prepare() and start() on audio", ise)
+                return
+            } catch (ioe: IOException) {
+                Log.d(TAG, "duva: larm failed calling prepare() and start() on audio", ioe)
+                return
+            }
+        } else {
+            // Recording, toggle and upload
+            Log.i(TAG, "duva: larm recording is false, uploading audio")
+            audioRecorder.stop()
+            audioRecorder.reset()
+            recording = false
+            btn_larmRecord.clearAnimation()
+            timer.cancel()
+            progress_soundRecording.visibility = View.INVISIBLE
+
+            try {
+                Log.i(TAG, "duva: larm audio playback setDatasource($audioOutputFile)")
+                mediaPlayer.reset()
+                mediaPlayer.setDataSource(audioOutputFile)
+                mediaPlayer.prepare()
+                mediaPlayer.start()
+            } catch (ise: IllegalStateException) {
+                Log.d(TAG, "duva: audio playback failed", ise)
+                return
+            } catch (ioe: IOException) {
+                Log.d(TAG, "duva: audio playback failed", ioe)
+                return
+            }
+        }
+    }
+
+    private fun startTimer() {
+        timerState = TimerState.Running
+
+        timer = object : CountDownTimer(SOUND_RECORDING_MAX_LENGTH, SOUND_RECORDING_TICK) {
+            override fun onFinish() = onTimerFinished()
+            override fun onTick(millisUntilFinished: Long) {
+                progress_soundRecording.incrementProgressBy(4)
+            }
+        }.start()
+    }
+
+    private fun onTimerFinished() {
+        timerState = TimerState.Stopped
+        recording = true
+        toggleLarmSoundRecording()
     }
 
     fun updateUI(firebaseUser: FirebaseUser?, currentUser: User?) {

@@ -15,72 +15,98 @@
             android:layout_alignParentBottom="false"
             android:layout_alignParentTop="true" />
 
-    <Switch
-            android:text="Permission larm preset"
-            android:layout_width="wrap_content"
+    <CheckBox
+            android:text="@string/switch_permission_larm_preset"
+            android:layout_width="333dp"
             android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_marginEnd="50dp"
-            android:layout_alignParentBottom="true"
             android:id="@+id/switch_larmPreset"
-            android:layout_marginBottom="136dp"/>
+            android:layout_marginTop="5dp"
+            android:layout_below="@+id/switch_settingNotice"
+            android:layout_alignStart="@+id/txt_clickedZone"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="30dp"
+            android:textStyle="italic"
+            android:splitTrack="false"
+            android:scrollbarAlwaysDrawHorizontalTrack="false"
+            android:layoutDirection="rtl"
+            android:alpha="0.5"
+            android:showText="false"
+            android:elegantTextHeight="false"
+            android:background="@android:color/darker_gray"/>
 
     <Switch
-            android:text="Setting alarm notice"
-            android:layout_width="wrap_content"
+            android:text="@string/switch_setting_notice"
+            android:layout_width="333dp"
             android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_marginEnd="48dp"
-            android:layout_alignParentBottom="true"
             android:id="@+id/switch_settingNotice"
-            android:layout_marginBottom="171dp"/>
+            android:layout_marginStart="-1dp"
+            android:layout_alignStart="@+id/txt_clickedZone"
+            android:layout_marginTop="0dp"
+            android:layout_below="@+id/switch_settingOverrideSound"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="30dp"/>
 
     <Switch
-            android:text="Setting override sound"
-            android:layout_width="wrap_content"
+            android:text="@string/switch_setting_override_sound"
+            android:layout_width="333dp"
             android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_marginEnd="48dp"
-            android:layout_alignParentBottom="true"
             android:id="@+id/switch_settingOverrideSound"
-            android:layout_marginBottom="204dp"/>
-
-    <Switch
-            android:text="Permission larm sound recording"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:layout_below="@+id/txt_clickedZone"
+            android:layout_marginStart="0dp"
+            android:layout_alignStart="@+id/txt_clickedZone"
             android:layout_alignParentEnd="true"
-            android:layout_marginEnd="49dp"
-            android:layout_alignParentBottom="true"
+            android:layout_marginEnd="30dp"/>
+
+    <CheckBox
+            android:text="@string/switch_permission_larm_soundRecording"
+            android:layout_width="333dp"
+            android:layout_height="wrap_content"
             android:id="@+id/switch_larmSoundRecording"
-            android:layout_marginBottom="98dp"/>
-
-    <Switch
-            android:text="Permission larm video"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_below="@+id/switch_larmPreset"
+            android:layout_alignStart="@+id/txt_clickedZone"
             android:layout_alignParentEnd="true"
-            android:layout_marginEnd="52dp"
-            android:layout_alignParentBottom="true"
+            android:layout_marginEnd="30dp"
+            android:textStyle="italic"
+            android:layoutDirection="rtl"
+            android:alpha=".5"
+            android:background="@android:color/darker_gray"/>
+
+    <CheckBox
+            android:text="@string/switch_permission_larm_video"
+            android:layout_width="333dp"
+            android:layout_height="wrap_content"
             android:id="@+id/switch_larmVideo"
-            android:layout_marginBottom="64dp"/>
+            android:layout_alignStart="@+id/txt_clickedZone"
+            android:layout_below="@+id/switch_larmSoundRecording"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="30dp"
+            android:layoutDirection="rtl"
+            android:textStyle="italic"
+            android:alpha=".5"
+            android:background="@android:color/darker_gray"/>
 
     <TextView
-            android:text="Placeholder"
+            android:text="@string/txt_clickedZone"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
             android:id="@+id/txt_clickedZone"
-            android:layout_alignStart="@+id/switch_larmPreset"
-            android:layout_marginBottom="235dp"/>
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="9dp"
+            android:layout_below="@+id/map"
+            android:textSize="18sp"
+            android:layout_alignParentStart="true"
+            android:textStyle="bold"/>
 
     <Button
             android:text="Update settings"
-            android:layout_width="wrap_content"
+            android:layout_width="204dp"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/switch_larmVideo"
-            android:layout_alignEnd="@+id/switch_settingNotice"
             android:id="@+id/btn_updateSettings"
-            android:layout_marginTop="-169dp"
-            android:layout_marginEnd="205dp"/>
+            android:layout_marginTop="5dp"
+            android:layout_below="@+id/switch_larmVideo"
+            android:background="@color/fui_bgPhone"
+            android:requiresFadingEdge="none"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="30dp"/>
 </RelativeLayout>

@@ -15,6 +15,7 @@ import android.widget.*
 import androidx.core.content.ContextCompat
 import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.*
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.GeoPoint
 import kotlinx.android.synthetic.main.fragment_home.*
 import kotlinx.android.synthetic.main.fragment_zones.*
@@ -43,14 +44,15 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
     private val TAG = "ZonesFragment"
 
     private var mapView: View? = null
+    private lateinit var auth: FirebaseAuth
     private lateinit var txt_clickedZone: TextView
 
     private lateinit var switch_settingNotice: Switch
     private lateinit var switch_settingOverrideSound: Switch
 
-    private lateinit var switch_larmPreset: Switch
-    private lateinit var switch_larmSoundRecording: Switch
-    private lateinit var switch_larmVideo: Switch
+    private lateinit var switch_larmPreset: CheckBox
+    private lateinit var switch_larmSoundRecording: CheckBox
+    private lateinit var switch_larmVideo: CheckBox
     private lateinit var btn_updateSettings: Button
     //private val mMap: GoogleMap? = null
 
@@ -60,6 +62,7 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
             param1 = it.getString(ARG_PARAM1)
             param2 = it.getString(ARG_PARAM2)
         }
+        auth = FirebaseAuth.getInstance()
     }
 
     override fun onCreateView(
@@ -79,11 +82,7 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
         switch_larmSoundRecording = view.findViewById(R.id.switch_larmSoundRecording)
         switch_larmVideo = view.findViewById(R.id.switch_larmVideo)
 
-        switch_settingNotice.isClickable = false
-        switch_settingOverrideSound.isClickable = false
-        switch_larmPreset.isClickable = false
-        switch_larmSoundRecording.isClickable = false
-        switch_larmVideo.isClickable = false
+        toggleUI(false)
 
         btn_updateSettings.setOnClickListener {
             if(switch_settingNotice.tag != null && switch_settingOverrideSound.tag != null && btn_updateSettings.tag != null) {
@@ -91,48 +90,16 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
                 var fieldvalues: MutableMap<String, Boolean> = mutableMapOf()
                 fieldvalues["setting_alarm_notice"] = switch_settingNotice.isChecked
                 fieldvalues["setting_alarm_override_sound"]  = switch_settingOverrideSound.isChecked
-                Firestore.updateFieldTransactional("subscriptions", subscription.id, fieldvalues, object: FirestoreCallback {
-                    override fun onSuccess() {}
-                    override fun onFailed() {}
+                Firestore.batchUpdate("subscriptions", subscription.id, fieldvalues, object: FirestoreCallback {
+                    override fun onSuccess() {
+                        Toast.makeText(context!!, "${getText(R.string.toast_updateZoneSuccess)}", Toast.LENGTH_LONG).show()
+                    }
+                    override fun onFailed() {
+                        Toast.makeText(context!!, "${getText(R.string.toast_updateZoneFailed)}", Toast.LENGTH_LONG).show()
+                    }
                 })
             }
         }
-
-        /*
-        switch_settingNotice.setOnCheckedChangeListener { _, isChecked ->
-            if(switch_settingNotice.tag != null) {
-                val subscription: Subscription = switch_settingNotice.tag as Subscription
-                if(isChecked) {
-                    Firestore.updateField("subscriptions", subscription.id, "setting_alarm_notice", true, object: FirestoreCallback {
-                        override fun onSuccess() {}
-                        override fun onFailed() {}
-                    })
-                } else {
-                    Firestore.updateField("subscriptions", subscription.id, "setting_alarm_notice", false, object: FirestoreCallback {
-                        override fun onSuccess() {}
-                        override fun onFailed() {}
-                    })
-                }
-            }
-        }
-
-        switch_settingOverrideSound.setOnCheckedChangeListener { _, isChecked ->
-            if(switch_settingOverrideSound.tag != null) {
-                val subscription: Subscription = switch_settingOverrideSound.tag as Subscription
-                if(isChecked) {
-                    Firestore.updateField("subscriptions", subscription.id, "setting_alarm_override_sound", true, object: FirestoreCallback {
-                        override fun onSuccess() {}
-                        override fun onFailed() {}
-                    })
-                } else {
-                    Firestore.updateField("subscriptions", subscription.id, "setting_alarm_override_sound", false, object: FirestoreCallback {
-                        override fun onSuccess() {}
-                        override fun onFailed() {}
-                    })
-                }
-            }
-        }
-        */
 
         return view
     }
@@ -190,8 +157,11 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
             mMap.uiSettings.isZoomControlsEnabled = true
             mMap.uiSettings.isMyLocationButtonEnabled = true
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(currentLocation!!.latitude, currentLocation.longitude), 15f))
-            mMap.setOnCircleClickListener {
-                onCircleClick(it, mMap)
+            mMap.setOnCircleClickListener { circle ->
+                onCircleClick(circle, mMap)
+            }
+            mMap.setOnMapClickListener { latlng ->
+                onMapClick(latlng, mMap)
             }
         }
         val allZones = (activity as MainActivity).allZones
@@ -209,16 +179,6 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
                         .clickable(true)
                 )
                 circle.tag = zone
-                /*
-                val marker = mMap.addMarker(
-                    MarkerOptions()
-                        .position(LatLng(zone.location.latitude, zone.location.longitude))
-                        .alpha(0f)
-                        .title(zone.name)
-                        .snippet(getString(R.string.map_desc_radius) + ": " + zone.radius)
-                )
-                markers.add(marker)
-                */
             }
         }
     }
@@ -230,26 +190,61 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
     private fun onCircleClick(circle: Circle, mMap: GoogleMap) {
         val zone: Zone = circle.tag as Zone
 
-        for(subscription in (activity as MainActivity).currentSubscriptions!!) {
-            if(subscription.zone == zone.id) {
+        if(auth.currentUser == null) {
+            Toast.makeText(context!!, "${getText(R.string.toast_notLoggedIn)}", Toast.LENGTH_LONG).show()
+        } else {
+            for(subscription in (activity as MainActivity).currentSubscriptions!!) {
+                if(subscription.zone == zone.id) {
+                    toggleUI(true)
+
+                    switch_settingNotice.tag = subscription
+                    switch_settingOverrideSound.tag = subscription
+                    btn_updateSettings.tag = subscription
+
+                    txt_clickedZone.text = zone.name
+
+                    switch_settingNotice.isChecked = subscription.setting_alarm_notice
+                    switch_settingOverrideSound.isChecked = subscription.setting_alarm_override_sound
+
+                    switch_larmPreset.isChecked = subscription.permission_larm_preset
+                    switch_larmSoundRecording.isChecked = subscription.permission_larm_soundrecording
+                    switch_larmVideo.isChecked = subscription.permission_larm_video
+
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(zone.location.latitude, zone.location.longitude), 15f))
+
+                }
+            }
+        }
+    }
+
+    private fun onMapClick(location: LatLng, mMap: GoogleMap) {
+        toggleUI(false)
+    }
+
+    private fun toggleUI(enabled: Boolean) {
+        when(enabled) {
+            true -> {
+                btn_updateSettings.visibility = View.VISIBLE
                 switch_settingNotice.isClickable = true
                 switch_settingOverrideSound.isClickable = true
+            }
+            false -> {
+                switch_settingNotice.isClickable = false
+                switch_settingOverrideSound.isClickable = false
+                switch_larmPreset.isClickable = false
+                switch_larmSoundRecording.isClickable = false
+                switch_larmVideo.isClickable = false
 
-                switch_settingNotice.tag = subscription
-                switch_settingOverrideSound.tag = subscription
-                btn_updateSettings.tag = subscription
+                btn_updateSettings.visibility = View.INVISIBLE
 
-                txt_clickedZone.text = zone.name
+                txt_clickedZone.text = getText(R.string.txt_clickedZone)
 
-                switch_settingNotice.isChecked = subscription.setting_alarm_notice
-                switch_settingOverrideSound.isChecked = subscription.setting_alarm_override_sound
+                switch_settingNotice.isChecked = false
+                switch_settingOverrideSound.isChecked = false
 
-                switch_larmPreset.isChecked = subscription.permission_larm_preset
-                switch_larmSoundRecording.isChecked = subscription.permission_larm_soundrecording
-                switch_larmVideo.isChecked = subscription.permission_larm_video
-
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(zone.location.latitude, zone.location.longitude), 15f))
-
+                switch_larmPreset.isChecked = false
+                switch_larmSoundRecording.isChecked = false
+                switch_larmVideo.isChecked = false
             }
         }
     }

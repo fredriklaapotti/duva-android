@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity(),
     private val TAG = "MainActivity"
     private val requestCodeAccessFineLocation = 101
     private val requestCodeWriteExternalStorage = 102
+    private val requestCodeRecordAudio = 103
 
     var currentUser: User? = null
     var currentSubscriptions: MutableList<Subscription>? = null
@@ -112,6 +113,7 @@ class MainActivity : AppCompatActivity(),
         setupSubscriptions()
         setupZones()
         setMapListener(ZonesFragment())
+        setupPermission(Manifest.permission.RECORD_AUDIO)
 
         Log.i(TAG, "duva: currentUser object in MainActivity = " + currentUser?.lastLocation) // Should return null
     }
@@ -384,6 +386,7 @@ class MainActivity : AppCompatActivity(),
                 when(permissionString) {
                     Manifest.permission.ACCESS_FINE_LOCATION -> builder.setMessage(R.string.permission_ACCESS_FINE_LOCATION).setTitle(R.string.permission_title)
                     Manifest.permission.WRITE_EXTERNAL_STORAGE -> builder.setMessage(R.string.permission_WRITE_EXTERNAL_STORAGE).setTitle(R.string.permission_title)
+                    Manifest.permission.RECORD_AUDIO -> builder.setMessage(R.string.permission_RECORD_AUDIO).setTitle(R.string.permission_title)
                 }
 
                 builder.setPositiveButton(R.string.permission_button_ok) { dialog, id ->
@@ -405,6 +408,7 @@ class MainActivity : AppCompatActivity(),
         when(permissionString) {
             Manifest.permission.ACCESS_FINE_LOCATION -> requestCode = requestCodeAccessFineLocation
             Manifest.permission.WRITE_EXTERNAL_STORAGE -> requestCode = requestCodeWriteExternalStorage
+            Manifest.permission.RECORD_AUDIO -> requestCode = requestCodeRecordAudio
         }
 
         ActivityCompat.requestPermissions(this, arrayOf(permissionString), requestCode)
@@ -421,6 +425,13 @@ class MainActivity : AppCompatActivity(),
                 }
             }
             requestCodeWriteExternalStorage -> {
+                if(grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                    // Keep for future use
+                } else {
+                    // Keep for future use
+                }
+            }
+            requestCodeRecordAudio -> {
                 if(grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                     // Keep for future use
                 } else {
