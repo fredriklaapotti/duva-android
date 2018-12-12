@@ -16,14 +16,13 @@ import android.view.animation.Animation
 import android.view.animation.AnimationSet
 import android.view.animation.AnimationUtils
 import android.view.animation.RotateAnimation
-import android.widget.Button
-import android.widget.ImageButton
-import android.widget.ProgressBar
-import android.widget.TextView
+import android.widget.*
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import io.opencensus.stats.Aggregation
 import kotlinx.android.synthetic.main.fragment_home.*
+import org.w3c.dom.Text
 import java.io.IOException
 import java.lang.IllegalStateException
 
@@ -51,6 +50,7 @@ class HomeFragment : Fragment() {
     private lateinit var auth: FirebaseAuth
 
     private lateinit var txt_username: TextView
+    private lateinit var txt_currentZone: TextView
     private lateinit var btn_larmRecord: ImageButton
     private lateinit var progress_soundRecording: ProgressBar
 
@@ -66,7 +66,6 @@ class HomeFragment : Fragment() {
     private val mediaPlayer: MediaPlayer = MediaPlayer()
     private lateinit var audioOutputFile: String
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -74,7 +73,6 @@ class HomeFragment : Fragment() {
             param2 = it.getString(ARG_PARAM2)
         }
         auth = FirebaseAuth.getInstance()
-        audioOutputFile = Environment.getExternalStorageDirectory().absolutePath + "/duva_audioOutputFile.3gp"
     }
 
     override fun onCreateView(
@@ -85,6 +83,7 @@ class HomeFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
 
         txt_username = view.findViewById(R.id.txt_username)
+        txt_currentZone = view.findViewById(R.id.txt_currentZone)
         btn_larmRecord = view.findViewById(R.id.btn_larmRecord)
         progress_soundRecording = view.findViewById(R.id.bar_progressSoundRecording)
         progress_soundRecording.visibility = View.INVISIBLE
@@ -175,6 +174,7 @@ class HomeFragment : Fragment() {
         if(!recording) {
             // Start recording, catch audio
             Log.i(TAG, "duva: larm recording is true, starting audio recording")
+            audioOutputFile = Environment.getExternalStorageDirectory().absolutePath + "/duva_audioOutputFile-" + Timestamp.now() + ".3gp"
             audioRecorder.reset()
             audioRecorder.setAudioSource(MediaRecorder.AudioSource.MIC)
             audioRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
@@ -205,6 +205,26 @@ class HomeFragment : Fragment() {
             btn_larmRecord.clearAnimation()
             timer.cancel()
             progress_soundRecording.visibility = View.INVISIBLE
+
+            CloudStorage.upload(audioOutputFile, object: CloudStorageUploadListener {
+                override fun onSuccess(url: String) {
+                    Log.i(TAG, "duva: returned in listener onSuccess file uploaded: $url")
+
+                    // TODO: continue here, fix system for keeping track of user with global variables?
+                    val alarm = Alarm(Timestamp.now(), auth.uid.toString(), "FIX THIS", url, "soundRecording")
+                    Firestore.addObject("alarms", alarm, object: FirestoreCallback {
+                        override fun onSuccess() {
+                            Log.i(TAG, "duva: returned in listener onSuccess alarm added")
+                        }
+
+                        override fun onFailed() {}
+                    })
+                }
+
+                override fun onFailed() {
+                    Log.d(TAG, "duva: returned in listener onFailed file upload")
+                }
+            })
 
             try {
                 Log.i(TAG, "duva: larm audio playback setDatasource($audioOutputFile)")
@@ -239,14 +259,17 @@ class HomeFragment : Fragment() {
         toggleLarmSoundRecording()
     }
 
-    fun updateUI(firebaseUser: FirebaseUser?, currentUser: User?) {
+    fun updateUI(firebaseUser: FirebaseUser?, currentUser: User?, zoneid: String? = null) {
         if(firebaseUser == null) {
             Log.i(TAG, "duva: firebaseUser == null")
+            btn_larmRecord.visibility = View.INVISIBLE
+            progress_soundRecording.visibility = View.INVISIBLE
         }
 
         if(firebaseUser != null) {
             Log.i(TAG, "duva: firebaseUser is registered")
             txt_username.text = firebaseUser.email
+            btn_larmRecord.visibility = View.VISIBLE
 
             if(firebaseUser.isAnonymous) {
                 Log.i(TAG, "duva: firebaseUser is anonymous")
@@ -256,5 +279,8 @@ class HomeFragment : Fragment() {
                 Log.i(TAG, "duva: firebaseUser is email verified")
             }
         }
+
+        //txt_currentZone.text = getString(R.string.txt_currentZone) : Globals.getCurrentZoneName()
+        txt_currentZone.text = Globals.getCurrentZoneName(zoneid).takeUnless { it == "unknown" } ?: getText(R.string.txt_currentZone)
     }
 }

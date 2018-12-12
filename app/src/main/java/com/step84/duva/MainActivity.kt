@@ -76,6 +76,7 @@ class MainActivity : AppCompatActivity(),
             Log.i(TAG, "duva: geofence received intent in onReceive() in MainActivity")
             when(intent?.action) {
                 "com.step84.duva.GEOFENCE_ENTER" -> geofenceTransition("enter", intent.extras!!.getString("zoneid", "0"))
+                "com.step84.duva.GEOFENCE_DWELL" -> geofenceTransition("dwell", intent.extras.getString("zoneid", "0"))
                 "com.step84.duva.GEOFENCE_EXIT" -> geofenceTransition("exit", intent.extras!!.getString("zoneid", "0"))
             }
         }
@@ -158,8 +159,18 @@ class MainActivity : AppCompatActivity(),
         super.onActivityResult(requestCode, resultCode, data)
         Log.i(TAG, "duva: in onActivityResult")
 
-        if(requestCode == 200) {
-            Log.i(TAG, "duva: requestCode == 200 in onActivityResult")
+        // TODO: update this, placeholder for auth callback
+        Log.i(TAG, "duva: requestCode == 200 in onActivityResult")
+        auth = FirebaseAuth.getInstance()
+        if(auth.currentUser != null) {
+            Firestore.updateCurrentUserFromAuthUid(auth.uid!!, object: FirestoreCallback {
+                override fun onSuccess() {
+                    Log.i(TAG, "duva: updated user from auth id = ${auth.uid}")
+                }
+                override fun onFailed() {
+                    Log.d(TAG, "duva: failed to update user from auth id")
+                }
+            })
         }
     }
 
@@ -202,6 +213,7 @@ class MainActivity : AppCompatActivity(),
                 locationResult ?: return
                 for(location in locationResult.locations) {
                     currentLocation = GeoPoint(location.latitude, location.longitude)
+                    Globals.currentLocation = GeoPoint(location.latitude, location.longitude)
                     //googleMapInterface?.onLocationUpdate(GeoPoint(location.latitude, location.longitude))
                 }
             }
@@ -225,10 +237,8 @@ class MainActivity : AppCompatActivity(),
 
             override fun onSuccess(obj: User) {
                 currentUser = obj
-                val fragment = supportFragmentManager.findFragmentByTag("HomeFragment")
-                if(fragment != null && fragment is HomeFragment) {
-                    fragment.updateUI(auth.currentUser, currentUser)
-                }
+                Globals.currentUser = obj
+                updateHomeFragment()
             }
 
             override fun onFailed() {
@@ -245,8 +255,11 @@ class MainActivity : AppCompatActivity(),
 
             override fun onSuccess(obj: MutableList<Subscription>) {
                 currentSubscriptions = obj
+                Globals.currentSubscriptions = obj
+                updateHomeFragment()
+
                 for(subscription in obj) {
-                    Log.i(TAG, "duva: subsription found = " + subscription.zone + " for user = " + currentUser?.uid)
+                    Log.i(TAG, "duva: subscription found = " + subscription.zone + " for user = " + currentUser?.uid)
                 }
 
             }
@@ -265,6 +278,7 @@ class MainActivity : AppCompatActivity(),
 
             override fun onSuccess(obj: MutableList<Zone>) {
                 allZones = obj
+                Globals.allZones = obj
                 setupGeofences(obj)
             }
 
@@ -281,7 +295,8 @@ class MainActivity : AppCompatActivity(),
                 .setRequestId(zone.id)
                 .setCircularRegion(zone.location.latitude, zone.location.longitude, zone.radius.toFloat())
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
+                .setLoiteringDelay(20 * 1000)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_DWELL or Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build())
         }
 
@@ -316,7 +331,7 @@ class MainActivity : AppCompatActivity(),
     private fun getGeofencingRequest(): GeofencingRequest {
         Log.i(TAG, "duva: geofence getGeofencingRequest()")
         return GeofencingRequest.Builder().apply {
-            setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+            setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER or GeofencingRequest.INITIAL_TRIGGER_DWELL)
             addGeofences(geofenceList)
         }.build()
     }
@@ -325,35 +340,65 @@ class MainActivity : AppCompatActivity(),
     private fun geofenceTransition(transition: String, zoneid: String) {
         Log.i(TAG, "duva: geofence received geofenceTransition($transition, $zoneid)")
 
-        if(auth.currentUser == null) {
-            return
-        }
+        when(transition) {
+            "enter" -> {
+                Log.i(TAG, "duva: geofence geofenceTransition() enter in MainActivity: $zoneid")
 
-        var subscriptionid: String = getSubscriptionidFromZoneid(zoneid)
-        if(subscriptionid != "null") {
-            when(transition) {
-                "enter" -> {
-                    Log.i(TAG, "duva: geofence geofenceTransition() enter in MainActivity: $zoneid")
+                // Separate paths for logged in users since we also update database if logged in
+                if(auth.currentUser != null && currentUser != null) {
+                    val subscriptionid: String = getSubscriptionidFromZoneid(zoneid)
                     Firestore.updateField("subscriptions", subscriptionid, "active", true, object: FirestoreCallback {
                         override fun onSuccess() {}
                         override fun onFailed() {}
                     })
 
-                    if(auth.currentUser != null && currentUser != null) {
-                        Firestore.updateField("users", currentUser!!.id, "lastZone", zoneid, object: FirestoreCallback {
-                            override fun onSuccess() {}
-                            override fun onFailed() {}
-                        })
-                    }
+                    Firestore.updateField("users", currentUser!!.id, "lastZone", zoneid, object: FirestoreCallback {
+                        override fun onSuccess() {}
+                        override fun onFailed() {}
+                    })
                 }
-                "exit" -> {
-                    Log.i(TAG, "duva: geofence geofenceTransition() exit in MainActivity: $zoneid")
+
+                updateHomeFragment(zoneid)
+
+            }
+            "dwell" -> {
+                Log.i(TAG, "duva: geofence geofenceTransition() dwell in MainActivity: $zoneid")
+
+                // Separate paths for logged in users since we also update database if logged in
+                if(auth.currentUser != null && currentUser != null) {
+                    val subscriptionid: String = getSubscriptionidFromZoneid(zoneid)
+                    Firestore.updateField("subscriptions", subscriptionid, "active", true, object: FirestoreCallback {
+                        override fun onSuccess() {}
+                        override fun onFailed() {}
+                    })
+
+                    Firestore.updateField("users", currentUser!!.id, "lastZone", zoneid, object: FirestoreCallback {
+                        override fun onSuccess() {}
+                        override fun onFailed() {}
+                    })
+                }
+
+                updateHomeFragment(zoneid)
+            }
+            "exit" -> {
+                Log.i(TAG, "duva: geofence geofenceTransition() exit in MainActivity: $zoneid")
+                if(auth.currentUser != null && currentUser != null) {
+                    val subscriptionid: String = getSubscriptionidFromZoneid(zoneid)
                     Firestore.updateField("subscriptions", subscriptionid, "active", false, object: FirestoreCallback {
                         override fun onSuccess() {}
                         override fun onFailed() {}
                     })
                 }
+
+                updateHomeFragment("exit")
             }
+        }
+    }
+
+    fun updateHomeFragment(zoneid: String? = null) {
+        val fragment = supportFragmentManager.findFragmentByTag("HomeFragment")
+        if(fragment != null && fragment is HomeFragment) {
+            fragment.updateUI(auth.currentUser, currentUser, zoneid)
         }
     }
 

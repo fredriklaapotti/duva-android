@@ -21,6 +21,7 @@ object Firestore {
     private const val DB_USERS_UID = "uid"
     private const val DB_SUBSCRIPTIONS = "subscriptions"
     private const val DB_SUBSCRIPTIONS_USER = "user"
+    private const val DB_SUBSCRIPTIONS_ACTIVE = "active"
     private const val DB_ZONES = "zones"
 
     /**
@@ -143,5 +144,73 @@ object Firestore {
                 Log.i(TAG, "duva: firestore failed to commit batch update")
                 callback.onFailed()
             }
+    }
+
+    fun addObject(dbcollection: String, obj: Any, callback: FirestoreCallback) {
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection(dbcollection)
+            .add(obj)
+            .addOnSuccessListener { documentReference ->
+                Log.i(TAG, "duva: firestore successfully added object $obj")
+                callback.onSuccess()
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "duva: firestore failed to addObject", exception)
+                callback.onFailed()
+            }
+    }
+
+    fun updateCurrentUserFromAuthUid(authuid: String, callback: FirestoreCallback) {
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection(DB_USERS)
+            .whereEqualTo(DB_USERS_UID, authuid)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if(querySnapshot.size() == 1) {
+                    for(document in querySnapshot) {
+                        Globals.currentUser = document.toObject(User::class.java)
+                        callback.onSuccess()
+                    }
+                } else {
+                    Log.d(TAG, "duva: firestore multiple users returned for where clause")
+                    callback.onFailed()
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "duva: firestore failed to update user object from user id", exception)
+                callback.onFailed()
+            }
+    }
+
+    fun resetActiveSubscriptions(authuid: String, callback: FirestoreCallback) {
+        val db = FirebaseFirestore.getInstance()
+        val batch = db.batch()
+
+        db.collection(DB_SUBSCRIPTIONS).whereEqualTo(DB_SUBSCRIPTIONS_USER, authuid)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                querySnapshot.forEach {
+                    val ref = db.collection(DB_SUBSCRIPTIONS).document(it.id)
+                    ref.update(DB_SUBSCRIPTIONS_ACTIVE, false)
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "duva: firestore failed to reset active subscriptions")
+                callback.onFailed()
+            }
+
+        /*
+        batch.commit()
+            .addOnSuccessListener {
+                Log.i(TAG, "duva: firestore batch updated reset active subscriptions")
+                callback.onSuccess()
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "duva: firestore failed to batch update reset active subscriptions", exception)
+                callback.onFailed()
+            }
+            */
     }
 }
