@@ -190,10 +190,14 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
     private fun onCircleClick(circle: Circle, mMap: GoogleMap) {
         val zone: Zone = circle.tag as Zone
 
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(zone.location.latitude, zone.location.longitude), 15f))
+
         if(auth.currentUser == null) {
-            Toast.makeText(context!!, "${getText(R.string.toast_notLoggedIn)}", Toast.LENGTH_LONG).show()
+            Toast.makeText(context!!, "${getText(R.string.toast_notLoggedIn)}", Toast.LENGTH_SHORT).show()
+            txt_clickedZone.text = Globals.getZoneNameFromZoneId(zone.id)
+
         } else {
-            for(subscription in (activity as MainActivity).currentSubscriptions!!) {
+            for(subscription in Globals.currentSubscriptions!!) {
                 if(subscription.zone == zone.id) {
                     toggleUI(true)
 
@@ -209,9 +213,6 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
                     switch_larmPreset.isChecked = subscription.permission_larm_preset
                     switch_larmSoundRecording.isChecked = subscription.permission_larm_soundrecording
                     switch_larmVideo.isChecked = subscription.permission_larm_video
-
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(zone.location.latitude, zone.location.longitude), 15f))
-
                 }
             }
         }

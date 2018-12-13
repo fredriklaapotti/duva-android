@@ -7,8 +7,10 @@ object Globals {
     private val TAG = "Globals"
     var currentUser: User? = null
     var currentSubscriptions: MutableList<Subscription>? = null
+    var currentSubscription: Subscription? = null
     var currentLocation: GeoPoint? = null
     var activeZone: String = "unknown"
+    var activeZoneId: String = "0"
     var allZones: MutableList<Zone>? = null
 
     fun Globals() {
@@ -27,11 +29,10 @@ object Globals {
                     for (zone in allZones!!) {
                         Log.i(TAG, "duva: getCurrentZoneName() looping zones = ${zone.id}")
                         if (subscription.zone == zone.id) {
-                            Log.i(
-                                TAG,
-                                "duva: getCurrentZoneName() found match, subscription.zone == ${subscription.zone}, zone.id == ${zone.id}"
-                            )
+                            Log.i(TAG, "duva: getCurrentZoneName() found match, subscription.zone == ${subscription.zone}, zone.id == ${zone.id}")
                             zoneName = zone.name
+                            this.activeZoneId = zone.id
+                            currentSubscription = subscription
                         }
                     }
                 }
@@ -39,12 +40,15 @@ object Globals {
         } else if(zoneid != null && zoneid != "exit") {
             Log.i(TAG, "duva: getCurrentZoneName() not logged in, going by zone id = $zoneid")
             zoneName = getZoneNameFromZoneId(zoneid)
+            this.activeZoneId = zoneid
         } else if(zoneid == "exit") {
             Log.i(TAG, "duva: getCurrentZoneName() not logged in, exit geofence, resetting zone")
             zoneName = "unknown"
+            this.activeZoneId = "0"
         } else {
             Log.i(TAG, "duva: getCurrentZoneName() not logged in, no zoneid, no geofence exit detected, going by last zoneName = ${this.activeZone}")
             zoneName = this.activeZone
+            this.activeZoneId = this.activeZoneId
         }
 
         this.activeZone = zoneName

@@ -1,34 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".SettingsFragment">
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".SettingsFragment"
+        android:orientation="vertical"
+        android:gravity="center_vertical">
 
     <Button
             android:text="@string/btn_signin"
-            android:layout_width="286dp"
+            android:layout_width="300dp"
             android:layout_height="wrap_content"
             android:id="@+id/btn_signIn"
-            android:layout_alignParentStart="true"
-            android:layout_marginStart="50dp"
-            android:layout_alignParentTop="true"
-            android:layout_marginTop="306dp"
             android:drawableStart="@drawable/ic_baseline_account_circle_24px"
-            android:paddingLeft="10dp"
-            android:paddingRight="5dp"
             android:background="@color/colorPrimary"
-            android:textColor="@android:color/white"/>
+            android:textColor="@android:color/white"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="30dp"/>
 
     <Button
             android:text="@string/btn_signout"
-            android:layout_width="284dp"
+            android:layout_width="300dp"
             android:layout_height="wrap_content"
             android:id="@+id/btn_signout"
-            android:layout_alignStart="@+id/btn_signIn"
-            android:layout_marginStart="0dp"
-            android:layout_marginTop="237dp"
-            android:layout_alignParentTop="true"
-            android:background="@color/design_default_color_secondary_variant"/>
-
-</RelativeLayout>
+            android:background="@color/design_default_color_secondary_variant"
+            android:layout_gravity="center_horizontal"/>
+</LinearLayout>

@@ -151,26 +151,20 @@ class MainActivity : AppCompatActivity(),
 
     override fun onDestroy() {
         super.onDestroy()
-        //LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
         unregisterReceiver(br)
     }
 
+    // TODO: update this, placeholder for auth callback
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         Log.i(TAG, "duva: in onActivityResult")
 
-        // TODO: update this, placeholder for auth callback
         Log.i(TAG, "duva: requestCode == 200 in onActivityResult")
         auth = FirebaseAuth.getInstance()
         if(auth.currentUser != null) {
-            Firestore.updateCurrentUserFromAuthUid(auth.uid!!, object: FirestoreCallback {
-                override fun onSuccess() {
-                    Log.i(TAG, "duva: updated user from auth id = ${auth.uid}")
-                }
-                override fun onFailed() {
-                    Log.d(TAG, "duva: failed to update user from auth id")
-                }
-            })
+            setupUser()
+            setupSubscriptions()
+            setupZones()
         }
     }
 
@@ -359,7 +353,6 @@ class MainActivity : AppCompatActivity(),
                 }
 
                 updateHomeFragment(zoneid)
-
             }
             "dwell" -> {
                 Log.i(TAG, "duva: geofence geofenceTransition() dwell in MainActivity: $zoneid")

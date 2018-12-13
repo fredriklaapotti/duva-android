@@ -1,6 +1,8 @@
 package com.step84.duva
 
+import android.app.AlertDialog
 import android.content.Context
+import android.content.DialogInterface
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.net.Uri
@@ -51,14 +53,19 @@ class HomeFragment : Fragment() {
 
     private lateinit var txt_username: TextView
     private lateinit var txt_currentZone: TextView
+    private lateinit var switch_toggleLarmButtons: Switch
     private lateinit var btn_larmRecord: ImageButton
     private lateinit var progress_soundRecording: ProgressBar
 
+    enum class LarmState {
+        Passive, Confirming, Larming
+    }
     enum class TimerState {
         Stopped, Paused, Running
     }
 
     private var recording: Boolean = false
+    private var larmState = LarmState.Passive
     private lateinit var timer: CountDownTimer
     private var timerState = TimerState.Stopped
 
@@ -84,9 +91,43 @@ class HomeFragment : Fragment() {
 
         txt_username = view.findViewById(R.id.txt_username)
         txt_currentZone = view.findViewById(R.id.txt_currentZone)
+        switch_toggleLarmButtons = view.findViewById(R.id.switch_toggleLarmButtons)
         btn_larmRecord = view.findViewById(R.id.btn_larmRecord)
         progress_soundRecording = view.findViewById(R.id.bar_progressSoundRecording)
         progress_soundRecording.visibility = View.INVISIBLE
+
+        switch_toggleLarmButtons.setOnCheckedChangeListener { _, isChecked ->
+            if(isChecked) {
+                AlertDialog.Builder(context)
+                    .setTitle(getText(R.string.dialog_larm_title))
+                    .setMessage(R.string.dialog_larm_message)
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .setPositiveButton(android.R.string.yes, DialogInterface.OnClickListener { dialogInterface, i ->
+                        btn_larmRecord.visibility = View.VISIBLE
+                    })
+                    .setNegativeButton(android.R.string.no, DialogInterface.OnClickListener { dialogInterface, i ->
+                        btn_larmRecord.visibility = View.INVISIBLE
+                        switch_toggleLarmButtons.isChecked = false
+                    }).show()
+            } else {
+                btn_larmRecord.visibility = View.INVISIBLE
+            }
+        }
+
+        /*
+        btn_confirmLarm.setOnClickListener {
+            AlertDialog.Builder(context)
+                .setTitle("Title")
+                .setMessage("Do you want to larm?")
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setPositiveButton(android.R.string.yes, DialogInterface.OnClickListener { dialogInterface, i ->
+                    btn_larmRecord.visibility = View.VISIBLE
+                })
+                .setNegativeButton(android.R.string.no, DialogInterface.OnClickListener { dialogInterface, i ->
+                    btn_larmRecord.visibility = View.INVISIBLE
+                }).show()
+        }
+        */
 
         btn_larmRecord.setOnClickListener {
             when (recording) {
@@ -211,10 +252,13 @@ class HomeFragment : Fragment() {
                     Log.i(TAG, "duva: returned in listener onSuccess file uploaded: $url")
 
                     // TODO: continue here, fix system for keeping track of user with global variables?
-                    val alarm = Alarm(Timestamp.now(), auth.uid.toString(), "FIX THIS", url, "soundRecording")
+                    val alarm = Alarm(Timestamp.now(), auth.uid.toString(), Globals.activeZoneId, url, "soundRecording")
                     Firestore.addObject("alarms", alarm, object: FirestoreCallback {
                         override fun onSuccess() {
                             Log.i(TAG, "duva: returned in listener onSuccess alarm added")
+                            Toast.makeText(context, R.string.toast_alarmSent, Toast.LENGTH_LONG).show()
+                            btn_larmRecord.visibility = View.INVISIBLE
+                            switch_toggleLarmButtons.isChecked = false
                         }
 
                         override fun onFailed() {}
@@ -269,7 +313,7 @@ class HomeFragment : Fragment() {
         if(firebaseUser != null) {
             Log.i(TAG, "duva: firebaseUser is registered")
             txt_username.text = firebaseUser.email
-            btn_larmRecord.visibility = View.VISIBLE
+            btn_larmRecord.visibility = View.INVISIBLE
 
             if(firebaseUser.isAnonymous) {
                 Log.i(TAG, "duva: firebaseUser is anonymous")
@@ -280,7 +324,24 @@ class HomeFragment : Fragment() {
             }
         }
 
-        //txt_currentZone.text = getString(R.string.txt_currentZone) : Globals.getCurrentZoneName()
         txt_currentZone.text = Globals.getCurrentZoneName(zoneid).takeUnless { it == "unknown" } ?: getText(R.string.txt_currentZone)
+
+        if(Globals.activeZone == "unknown" || firebaseUser == null) {
+            switch_toggleLarmButtons.visibility = View.INVISIBLE
+            btn_larmRecord.visibility = View.INVISIBLE
+        } else {
+            switch_toggleLarmButtons.visibility = View.VISIBLE
+            if(switch_toggleLarmButtons.isChecked) {
+                btn_larmRecord.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    fun View.toggleVisibility() {
+        if(visibility == View.VISIBLE) {
+            visibility = View.INVISIBLE
+        } else {
+            visibility = View.VISIBLE
+        }
     }
 }

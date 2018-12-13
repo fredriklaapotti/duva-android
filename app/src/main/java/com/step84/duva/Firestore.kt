@@ -161,6 +161,11 @@ object Firestore {
             }
     }
 
+    /**
+     * Deprecated, keep for eventual future use
+     * Reason was it's just easier to call setupUser/Subscription/Zone() when user logs in,
+     * instead of depending on the previous listener to catch the update
+     */
     fun updateCurrentUserFromAuthUid(authuid: String, callback: FirestoreCallback) {
         val db = FirebaseFirestore.getInstance()
 
@@ -200,17 +205,5 @@ object Firestore {
                 Log.d(TAG, "duva: firestore failed to reset active subscriptions")
                 callback.onFailed()
             }
-
-        /*
-        batch.commit()
-            .addOnSuccessListener {
-                Log.i(TAG, "duva: firestore batch updated reset active subscriptions")
-                callback.onSuccess()
-            }
-            .addOnFailureListener { exception ->
-                Log.d(TAG, "duva: firestore failed to batch update reset active subscriptions", exception)
-                callback.onFailed()
-            }
-            */
     }
 }

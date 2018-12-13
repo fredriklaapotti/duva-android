@@ -1,97 +1,125 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:app="http://schemas.android.com/apk/res-auto"
-                xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".HomeFragment">
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentStart="false"
+        android:layout_alignParentTop="false"
+        tools:context=".HomeFragment"
+        android:orientation="vertical">
 
-    <TextView
+    <LinearLayout
+            android:orientation="horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_marginStart="79dp"
-            android:id="@+id/txt_desc_username"
-            android:layout_marginTop="26dp"
-            android:text="@string/txt_desc_username"
-            android:layout_below="@+id/txt_appName"
-            android:textStyle="bold"/>
+            android:layout_marginTop="50dp"
+            android:layout_gravity="center_horizontal">
+
+        <ImageView
+                android:src="@mipmap/ic_duva_icon"
+                android:layout_width="67dp"
+                android:layout_height="72dp"
+                android:id="@+id/img_duvaIcon"/>
+
+        <TextView
+                android:text="@string/app_name"
+                android:layout_width="93dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/txt_appName"
+                android:textSize="30sp"
+                android:textStyle="bold"
+                android:layout_gravity="center_vertical"/>
+    </LinearLayout>
 
     <TextView
-            android:text="@string/txt_username"
+            android:text="@string/app_description"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_toEndOf="@+id/txt_desc_username"
-            android:id="@+id/txt_username"
-            android:layout_marginTop="26dp"
-            android:layout_marginStart="11dp"
-            android:layout_below="@+id/txt_appName"/>
+            android:id="@+id/txt_appDescription"
+            android:textStyle="italic"
+            android:layout_gravity="center_horizontal"/>
 
-    <TextView
-            android:text="@string/txt_desc_currentZone"
-            android:layout_width="wrap_content"
+    <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/txt_desc_currentZone"
-            android:layout_marginTop="10dp"
-            android:layout_alignStart="@+id/txt_desc_username"
-            android:layout_below="@+id/txt_desc_username"
-            android:textStyle="bold"/>
+            android:layout_marginTop="30dp"
+            android:layout_gravity="center_horizontal">
 
-    <TextView
-            android:text="@string/txt_currentZone"
-            android:layout_width="wrap_content"
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/txt_desc_username"
+                android:text="@string/txt_desc_username"
+                android:textStyle="bold"
+                android:layout_marginStart="80dp"/>
+
+        <TextView
+                android:text="@string/txt_username"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/txt_username"
+                android:layout_marginStart="5dp"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/txt_currentZone"
-            android:layout_marginTop="10dp"
-            android:layout_below="@+id/txt_username"
-            android:layout_toEndOf="@+id/txt_desc_currentZone"
-            android:layout_marginStart="10dp"/>
+            android:layout_gravity="center_horizontal">
 
-    <ImageButton
-            android:src="@drawable/btn_record"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_centerHorizontal="true"
-            android:layout_alignParentBottom="true"
-            android:id="@+id/btn_larmRecord"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:layout_marginBottom="145dp"
-            android:scaleType="fitCenter"
-            android:contentDescription="@string/btn_desc_larmRecord"/>
+        <TextView
+                android:text="@string/txt_desc_currentZone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/txt_desc_currentZone"
+                android:textStyle="bold"
+                android:layout_marginStart="80dp"/>
+
+        <TextView
+                android:text="@string/txt_currentZone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/txt_currentZone"
+                android:layout_marginStart="5dp"/>
+
+    </LinearLayout>
+
+    <Switch
+            android:text="@string/switch_toggleLarmButtons"
+            android:layout_width="wrap_content"
+            android:id="@+id/switch_toggleLarmButtons"
+            android:layout_marginTop="30dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_height="30dp"
+            android:switchPadding="10dp"/>
 
     <ProgressBar
             style="@android:style/Widget.ProgressBar.Horizontal"
-            android:layout_width="180dp"
+            android:layout_width="291dp"
             android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
             android:id="@+id/bar_progressSoundRecording"
-            android:layout_marginBottom="305dp"
-            android:layout_alignParentStart="true"
-            android:layout_marginStart="90dp"
-            />
+            android:layout_marginTop="20dp"
+            android:layout_gravity="center_horizontal"/>
 
-    <ImageView
-            android:src="@mipmap/ic_duva_icon"
-            android:layout_width="48dp"
-            android:layout_height="43dp"
-            android:id="@+id/img_duvaIcon"
-            android:layout_alignEnd="@+id/btn_larmRecord"
-            android:layout_marginStart="103dp"
-            android:layout_marginEnd="93dp"
-            android:layout_alignBottom="@+id/txt_appName"
-            android:layout_marginBottom="-2dp"
-            android:layout_alignParentStart="true"/>
-
-    <TextView
-            android:text="@string/app_name"
-            android:layout_width="93dp"
+    <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_marginStart="153dp"
-            android:id="@+id/txt_appName"
-            android:textSize="30sp"
-            android:textStyle="bold"
-            android:layout_marginTop="38dp"
-            android:layout_alignParentTop="true"/>
+            android:layout_marginTop="30dp"
+            android:layout_gravity="center_horizontal">
 
-</RelativeLayout>
+        <ImageButton
+                android:src="@drawable/btn_record"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:id="@+id/btn_larmRecord"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:scaleType="fitCenter"
+                android:contentDescription="@string/btn_desc_larmRecord"
+                />
+    </LinearLayout>
+
+</LinearLayout>
