@@ -82,12 +82,16 @@ class SettingsFragment : Fragment() {
                 .signOut(context!!)
                 .addOnCompleteListener {
                     Toast.makeText(activity, "Signed out", Toast.LENGTH_LONG).show()
-                    Firestore.resetActiveSubscriptions(Globals.currentUser!!.uid, object: FirestoreCallback {
-                        override fun onSuccess() {}
-                        override fun onFailed() {}
-                    })
-                    Globals.currentSubscriptions = null
-                    Globals.currentUser = null
+                    if(Globals.currentUser != null) {
+                        Firestore.resetActiveSubscriptions(Globals.currentUser!!.uid, object: FirestoreCallback {
+                            override fun onSuccess() {
+                                Globals.currentUser = null
+                                Globals.currentSubscriptions = null
+                            }
+                            override fun onFailed() {}
+                        })
+                    }
+
                     btn_signIn.visibility = View.VISIBLE
                     btn_signOut.visibility = View.INVISIBLE
                 }

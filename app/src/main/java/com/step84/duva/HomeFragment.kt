@@ -215,7 +215,7 @@ class HomeFragment : Fragment() {
         if(!recording) {
             // Start recording, catch audio
             Log.i(TAG, "duva: larm recording is true, starting audio recording")
-            audioOutputFile = Environment.getExternalStorageDirectory().absolutePath + "/duva_audioOutputFile-" + Timestamp.now() + ".3gp"
+            audioOutputFile = Environment.getExternalStorageDirectory().absolutePath + "/duva_audioOutputFile.3gp"
             audioRecorder.reset()
             audioRecorder.setAudioSource(MediaRecorder.AudioSource.MIC)
             audioRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)

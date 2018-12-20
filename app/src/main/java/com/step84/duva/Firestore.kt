@@ -3,6 +3,7 @@ package com.step84.duva
 import android.util.Log
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 
 interface FirestoreListener<T> {
     fun onStart()
@@ -204,6 +205,29 @@ object Firestore {
             .addOnFailureListener { exception ->
                 Log.d(TAG, "duva: firestore failed to reset active subscriptions")
                 callback.onFailed()
+            }
+    }
+
+    fun subscribeToTopic(zoneId: String, callback: FirestoreCallback) {
+        FirebaseMessaging.getInstance().subscribeToTopic(zoneId)
+            .addOnSuccessListener {
+                Log.i(TAG, "duva: FCM subscribed to $zoneId")
+                callback.onSuccess()
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "duva: FCM failed to subscribe to topic: ", exception)
+                callback.onFailed()
+            }
+    }
+
+    fun unsubscribeFromTopic(zoneId: String, callback: FirestoreCallback) {
+        FirebaseMessaging.getInstance().unsubscribeFromTopic(zoneId)
+            .addOnSuccessListener {
+                Log.i(TAG, "duva: FCM unsubscribed from $zoneId")
+                callback.onSuccess()
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "duva: FCM failed to unsubscribe from topic: ", exception)
             }
     }
 }

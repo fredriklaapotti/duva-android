@@ -19,6 +19,7 @@ import com.google.android.gms.tasks.Task
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.GeoPoint
@@ -350,6 +351,11 @@ class MainActivity : AppCompatActivity(),
                         override fun onSuccess() {}
                         override fun onFailed() {}
                     })
+
+                    Firestore.subscribeToTopic(zoneid, object: FirestoreCallback {
+                        override fun onSuccess() {}
+                        override fun onFailed() {}
+                    })
                 }
 
                 updateHomeFragment(zoneid)
@@ -369,6 +375,11 @@ class MainActivity : AppCompatActivity(),
                         override fun onSuccess() {}
                         override fun onFailed() {}
                     })
+
+                    Firestore.subscribeToTopic(zoneid, object: FirestoreCallback {
+                        override fun onSuccess() {}
+                        override fun onFailed() {}
+                    })
                 }
 
                 updateHomeFragment(zoneid)
@@ -378,6 +389,11 @@ class MainActivity : AppCompatActivity(),
                 if(auth.currentUser != null && currentUser != null) {
                     val subscriptionid: String = getSubscriptionidFromZoneid(zoneid)
                     Firestore.updateField("subscriptions", subscriptionid, "active", false, object: FirestoreCallback {
+                        override fun onSuccess() {}
+                        override fun onFailed() {}
+                    })
+
+                    Firestore.unsubscribeFromTopic(zoneid, object: FirestoreCallback {
                         override fun onSuccess() {}
                         override fun onFailed() {}
                     })
