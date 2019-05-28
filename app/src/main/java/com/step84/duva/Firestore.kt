@@ -91,6 +91,23 @@ object Firestore {
             }
     }
 
+    fun deleteDocument(dbcollection: String, document: String, callback: FirestoreCallback) {
+        val db = FirebaseFirestore.getInstance()
+
+        db
+            .collection(dbcollection)
+            .document(document)
+            .delete()
+            .addOnSuccessListener {
+                Log.i(TAG, "duva: firestore successfully deleted $dbcollection/$document")
+                callback.onSuccess()
+            }
+            .addOnFailureListener {
+                Log.i(TAG, "duva: firestore failed to delete $dbcollection/$document")
+                callback.onFailed()
+            }
+    }
+
     fun <T> updateField(dbcollection: String, document: String, field: String, value: T, callback: FirestoreCallback) {
         val db = FirebaseFirestore.getInstance()
 
@@ -158,6 +175,22 @@ object Firestore {
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "duva: firestore failed to addObject", exception)
+                callback.onFailed()
+            }
+    }
+
+    fun addSubscription(obj: Subscription, callback: FirestoreCallback) {
+        val db = FirebaseFirestore.getInstance()
+        val ref = db.collection("subscriptions").document()
+        obj.id = ref.id
+        ref
+            .set(obj)
+            .addOnSuccessListener {
+                Log.i(TAG, "duva: successfully added subscription")
+                callback.onSuccess()
+            }
+            .addOnFailureListener {exception ->
+                Log.d(TAG, "duva: failed to add subscription", exception)
                 callback.onFailed()
             }
     }

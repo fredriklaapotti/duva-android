@@ -342,12 +342,19 @@ class MainActivity : AppCompatActivity(),
                 // Separate paths for logged in users since we also update database if logged in
                 if(auth.currentUser != null && currentUser != null) {
                     val subscriptionid: String = getSubscriptionidFromZoneid(zoneid)
-                    Firestore.updateField("subscriptions", subscriptionid, "active", true, object: FirestoreCallback {
+                    if(subscriptionid != "null") {
+                        Firestore.updateField("subscriptions", subscriptionid, "active", true, object: FirestoreCallback {
+                            override fun onSuccess() {}
+                            override fun onFailed() {}
+                        })
+                    }
+
+                    Firestore.updateField("users", currentUser!!.id, "lastZone", zoneid, object: FirestoreCallback {
                         override fun onSuccess() {}
                         override fun onFailed() {}
                     })
 
-                    Firestore.updateField("users", currentUser!!.id, "lastZone", zoneid, object: FirestoreCallback {
+                    Firestore.updateField("users", currentUser!!.id, "lastUpdate", Timestamp.now(), object: FirestoreCallback {
                         override fun onSuccess() {}
                         override fun onFailed() {}
                     })
@@ -417,10 +424,12 @@ class MainActivity : AppCompatActivity(),
             return "null"
         }
 
-        for(subscription in currentSubscriptions!!) {
-            if(zoneid == subscription.zone) {
-                Log.i(TAG, "duva: found match in getSubscriptionFromZoneid: $zoneid == ${subscription.zone}")
-                subscriptionid = subscription.id
+        if(currentSubscriptions != null) {
+            for(subscription in currentSubscriptions!!) {
+                if(zoneid == subscription.zone) {
+                    Log.i(TAG, "duva: found match in getSubscriptionFromZoneid: $zoneid == ${subscription.zone}")
+                    subscriptionid = subscription.id
+                }
             }
         }
 

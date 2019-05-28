@@ -32,6 +32,8 @@
     <string name="toast_updateZoneSuccess">Settings updated</string>
     <string name="toast_updateZoneFailed">Failed to update settings</string>
 
+    <string name="btn_subscribeZone">Subscribe to updates</string>
+    <string name="btn_unsubscribeZone">Remove zone</string>
     <string name="btn_updateSettings">Update settings</string>
     <string name="txt_clickedZone">Click on zone circle in map for settings</string>
     <string name="switch_permission_larm_preset">Permission: larm w/ preset</string>

@@ -28,7 +28,7 @@
                 android:required="false" />
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.step84.duva.MainActivity"
             android:screenOrientation="portrait"
             android:label="@string/app_name">
             <intent-filter>

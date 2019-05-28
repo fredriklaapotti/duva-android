@@ -12,6 +12,7 @@ object Globals {
     var activeZone: String = "unknown"
     var activeZoneId: String = "0"
     var allZones: MutableList<Zone>? = null
+    var clickedZone: String = "unknown"
 
     fun Globals() {
         // Something

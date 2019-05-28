@@ -5,6 +5,8 @@
     android:layout_height="match_parent"
     tools:context=".ZonesFragment">
 
+
+
     <fragment
             android:id="@+id/map"
             android:layout_width="wrap_content"
@@ -97,6 +99,30 @@
             android:textSize="18sp"
             android:layout_alignParentStart="true"
             android:textStyle="bold"/>
+
+    <Button
+        android:id="@+id/btn_subscribeZone"
+        android:layout_width="124dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/switch_larmVideo"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="271dp"
+        android:background="#CCB89A"
+        android:requiresFadingEdge="none"
+        android:text="@string/btn_subscribeZone" />
+
+    <Button
+        android:id="@+id/btn_unsubscribeZone"
+        android:layout_width="124dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/switch_larmVideo"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="271dp"
+        android:background="#CCB89A"
+        android:requiresFadingEdge="none"
+        android:text="@string/btn_unsubscribeZone" />
 
     <Button
             android:text="@string/btn_updateSettings"

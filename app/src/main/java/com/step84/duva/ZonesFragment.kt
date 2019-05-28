@@ -17,8 +17,6 @@ import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.GeoPoint
-import kotlinx.android.synthetic.main.fragment_home.*
-import kotlinx.android.synthetic.main.fragment_zones.*
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
@@ -54,6 +52,8 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
     private lateinit var switch_larmSoundRecording: CheckBox
     private lateinit var switch_larmVideo: CheckBox
     private lateinit var btn_updateSettings: Button
+    private lateinit var btn_subscribeZone: Button
+    private lateinit var btn_unsubscribeZone: Button
     //private val mMap: GoogleMap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,6 +74,8 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
 
         txt_clickedZone = view.findViewById(R.id.txt_clickedZone)
         btn_updateSettings = view.findViewById(R.id.btn_updateSettings)
+        btn_subscribeZone = view.findViewById(R.id.btn_subscribeZone)
+        btn_unsubscribeZone = view.findViewById(R.id.btn_unsubscribeZone)
 
         switch_settingNotice = view.findViewById(R.id.switch_settingNotice)
         switch_settingOverrideSound = view.findViewById(R.id.switch_settingOverrideSound)
@@ -99,6 +101,57 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
                     }
                 })
             }
+        }
+
+        btn_subscribeZone.setOnClickListener {
+            val newSubscription: Subscription = Subscription("0", true, auth.uid.toString(), Globals.clickedZone, false, false, false, false, false)
+            Log.i(TAG, "duva: trying to add subscription")
+
+            // TODO: update to use active flag instead
+            Firestore.addSubscription(newSubscription, object: FirestoreCallback {
+                override fun onSuccess() {
+                    Log.i(TAG, "duva: successfully added document and subscribed to zone")
+                    btn_subscribeZone.visibility = View.INVISIBLE
+                    btn_unsubscribeZone.visibility = View.VISIBLE
+                    btn_updateSettings.visibility = View.VISIBLE
+                }
+
+                override fun onFailed() {
+                    Log.d(TAG, "duva: failed to add document and subscribe to zone")
+                }
+            })
+        }
+
+        btn_unsubscribeZone.setOnClickListener {
+            val currentSubscription: Subscription = btn_updateSettings.tag as Subscription
+            Firestore.deleteDocument("subscriptions", currentSubscription.id, object: FirestoreCallback {
+                override fun onSuccess() {
+                    Log.i(TAG, "duva: successfully removed document and unsubscribed")
+                    btn_subscribeZone.visibility = View.VISIBLE
+                    btn_unsubscribeZone.visibility = View.INVISIBLE
+                    btn_updateSettings.visibility = View.INVISIBLE
+                }
+
+                override fun onFailed() {
+                    Log.d(TAG, "duva: failed to remove document and unsubscribe")
+                }
+            })
+
+            // TODO: unsubscribing should only toggle active flag, find nicer way instead of deleting
+            // TODO: That means above method is wrong, convert subscription method first
+            /*
+            val fieldvalues: MutableMap<String, Boolean> = mutableMapOf()
+            fieldvalues["active"] = false
+            Firestore.batchUpdate("subscriptions", currentSubscription.id, fieldvalues, object: FirestoreCallback {
+                override fun onSuccess() {
+                    Log.i(TAG, "duva: successfully unsubscribed (toggled active to false) from zone")
+                }
+
+                override fun onFailed() {
+                    Log.d(TAG, "duva: failed to unsubscribe (toggle active to false) from zone")
+                }
+            })
+            */
         }
 
         return view
@@ -191,21 +244,41 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
         val zone: Zone = circle.tag as Zone
 
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(zone.location.latitude, zone.location.longitude), 15f))
+        Globals.clickedZone = zone.id
+        txt_clickedZone.text = Globals.getZoneNameFromZoneId(zone.id)
 
         if(auth.currentUser == null) {
             Toast.makeText(context!!, "${getText(R.string.toast_notLoggedIn)}", Toast.LENGTH_SHORT).show()
-            txt_clickedZone.text = Globals.getZoneNameFromZoneId(zone.id)
+            //txt_clickedZone.text = Globals.getZoneNameFromZoneId(zone.id)
 
         } else {
-            for(subscription in Globals.currentSubscriptions!!) {
+            if(Globals.currentSubscriptions!!.isEmpty()) {
+                Log.i(TAG, "duva: no subscriptions at all")
+                btn_subscribeZone.visibility = View.VISIBLE
+                btn_unsubscribeZone.visibility = View.INVISIBLE
+                switch_settingNotice.tag = null
+                switch_settingOverrideSound.tag = null
+                btn_updateSettings.tag = null
+                btn_updateSettings.visibility = View.INVISIBLE
+
+                switch_settingNotice.isChecked = false
+                switch_settingOverrideSound.isChecked = false
+
+                switch_larmPreset.isChecked = false
+                switch_larmSoundRecording.isChecked = false
+                switch_larmVideo.isChecked = false
+            }
+            loop@ for(subscription in Globals.currentSubscriptions!!) {
                 if(subscription.zone == zone.id) {
                     toggleUI(true)
+                    btn_subscribeZone.visibility = View.INVISIBLE
+                    btn_unsubscribeZone.visibility = View.VISIBLE
 
                     switch_settingNotice.tag = subscription
                     switch_settingOverrideSound.tag = subscription
                     btn_updateSettings.tag = subscription
 
-                    txt_clickedZone.text = zone.name
+                    //txt_clickedZone.text = Globals.getZoneNameFromZoneId(zone.id)
 
                     switch_settingNotice.isChecked = subscription.setting_alarm_notice
                     switch_settingOverrideSound.isChecked = subscription.setting_alarm_override_sound
@@ -213,6 +286,21 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
                     switch_larmPreset.isChecked = subscription.permission_larm_preset
                     switch_larmSoundRecording.isChecked = subscription.permission_larm_soundrecording
                     switch_larmVideo.isChecked = subscription.permission_larm_video
+                    break@loop
+                } else { // No subscription found, will loop subscriptions but end up here if none found
+                    btn_subscribeZone.visibility = View.VISIBLE
+                    btn_unsubscribeZone.visibility = View.INVISIBLE
+                    switch_settingNotice.tag = null
+                    switch_settingOverrideSound.tag = null
+                    btn_updateSettings.tag = null
+                    btn_updateSettings.visibility = View.INVISIBLE
+
+                    switch_settingNotice.isChecked = false
+                    switch_settingOverrideSound.isChecked = false
+
+                    switch_larmPreset.isChecked = false
+                    switch_larmSoundRecording.isChecked = false
+                    switch_larmVideo.isChecked = false
                 }
             }
         }
@@ -226,6 +314,8 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
         when(enabled) {
             true -> {
                 btn_updateSettings.visibility = View.VISIBLE
+                btn_subscribeZone.visibility = View.INVISIBLE
+                btn_unsubscribeZone.visibility = View.INVISIBLE
                 switch_settingNotice.isClickable = true
                 switch_settingOverrideSound.isClickable = true
             }
@@ -237,6 +327,8 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
                 switch_larmVideo.isClickable = false
 
                 btn_updateSettings.visibility = View.INVISIBLE
+                btn_subscribeZone.visibility = View.INVISIBLE
+                btn_unsubscribeZone.visibility = View.INVISIBLE
 
                 txt_clickedZone.text = getText(R.string.txt_clickedZone)
 
