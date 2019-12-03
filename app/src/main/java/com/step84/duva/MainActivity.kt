@@ -231,9 +231,11 @@ class MainActivity : AppCompatActivity(),
             }
 
             override fun onSuccess(obj: User) {
+                Log.i(TAG, "duva: user populated user object in setupUser()")
                 currentUser = obj
                 Globals.currentUser = obj
                 updateHomeFragment()
+                //setupSubscriptions()
             }
 
             override fun onFailed() {
@@ -254,8 +256,9 @@ class MainActivity : AppCompatActivity(),
                 updateHomeFragment()
 
                 for(subscription in obj) {
-                    Log.i(TAG, "duva: subscription found = " + subscription.zone + " for user = " + currentUser?.uid)
+                    Log.i(TAG, "duva: subscription found = " + subscription.zone + " for user = " + currentUser?.uid + " with auth.currentUser.email = " + auth.currentUser?.email)
                 }
+                //setupZones()
 
             }
 
@@ -359,6 +362,7 @@ class MainActivity : AppCompatActivity(),
                         override fun onFailed() {}
                     })
 
+                    Log.i(TAG, "duva: FCM just before subscribe")
                     Firestore.subscribeToTopic(zoneid, object: FirestoreCallback {
                         override fun onSuccess() {}
                         override fun onFailed() {}
