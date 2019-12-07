@@ -1,6 +1,8 @@
 package com.step84.duva
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -11,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Toast
 import com.firebase.ui.auth.AuthUI
+import com.firebase.ui.auth.IdpResponse
 import com.google.android.gms.tasks.Task
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.AuthResult
@@ -107,6 +110,7 @@ class SettingsFragment : Fragment() {
                     .setAvailableProviders(providers)
                     .build(),
                 200)
+            btn_signInAnonymous.visibility = View.INVISIBLE
             btn_signIn.visibility = View.INVISIBLE
             btn_signOut.visibility = View.VISIBLE
         }
@@ -126,12 +130,52 @@ class SettingsFragment : Fragment() {
                         })
                     }
 
+                    btn_signInAnonymous.visibility = View.VISIBLE
                     btn_signIn.visibility = View.VISIBLE
                     btn_signOut.visibility = View.INVISIBLE
                 }
         }
 
         return view
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        Log.i(TAG, "duva: user in onActivityResult()")
+
+        if(requestCode == 200) {
+            val response = IdpResponse.fromResultIntent(data)
+            Log.i(TAG, "duva: user IdpResponse = $response")
+
+            if(resultCode == Activity.RESULT_OK) {
+                Log.i(TAG, "duva: user successfully signed in and activity received return code RESULT_OK")
+
+                if(response != null) {
+                    if(response.isNewUser) {
+                        Log.i(TAG, "duva: user response = new user")
+
+                        val newUser: User = User(uid = auth.uid.toString(), active = true)
+                        Firestore.addUser(newUser, object: FirestoreCallback {
+                            override fun onSuccess() {
+                                Log.i(TAG, "duva: user ${auth.uid.toString()} successfully added to database")
+                            }
+                            override fun onFailed() {
+                                Log.d(TAG, "duva: newly signed up user failed to add to database")
+                            }
+                        })
+
+
+
+                    } else {
+                        Log.i(TAG, "duva: user response = not a new user")
+                    }
+                }
+
+
+            } else {
+                Log.d(TAG, "duva: user failed to sign in, activity did not receive RESULT_OK")
+            }
+        }
     }
 
     fun onButtonPressed(uri: Uri) {

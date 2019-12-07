@@ -205,7 +205,7 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
         val home = LatLng(57.670897, 15.860455)
         var currentLocation = (activity as MainActivity).currentLocation
         val markers: MutableList<Marker> = mutableListOf()
-        if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+        if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION) && currentLocation != null) {
             mMap.isMyLocationEnabled = true
             mMap.uiSettings.isZoomControlsEnabled = true
             mMap.uiSettings.isMyLocationButtonEnabled = true

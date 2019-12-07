@@ -11,6 +11,7 @@
     <string name="txt_username">not logged in</string>
     <string name="txt_desc_currentZone">Current zone:</string>
     <string name="txt_currentZone">no zone detected</string>
+    <string name="txt_debug">Text view for debugging purposes</string>
     <string name="btn_desc_larmRecord">Larm record button</string>
     <string name="switch_toggleLarmButtons">Enable alarms for current zone:</string>
     <string name="dialog_larm_title">Confirm enable alarm buttons</string>
@@ -22,6 +23,7 @@
     <string name="permission_ACCESS_FINE_LOCATION">Permission to access location is required</string>
     <string name="permission_WRITE_EXTERNAL_STORAGE">Permission to write to shared storage is required</string>
     <string name="permission_RECORD_AUDIO">Permission to record audio is required</string>
+    <string name="alert_geofences">Failed to add a list of geofences to the Android system. Try increasing your phones location accuracy and restart the app.</string>
 
     <string name="map_desc_radius">Radius</string>
 

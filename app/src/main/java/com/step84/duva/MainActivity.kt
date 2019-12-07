@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -24,6 +25,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.GeoPoint
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.fragment_home.*
 
 class MainActivity : AppCompatActivity(),
     HomeFragment.OnFragmentInteractionListener,
@@ -319,24 +321,13 @@ class MainActivity : AppCompatActivity(),
             geofencingClient.addGeofences(getGeofencingRequest(), geofencePendingIntent)?.run {
                 addOnSuccessListener {
                     Log.i(TAG, "duva: geofence added, geofencePendingIntent = " + geofencePendingIntent.toString())
+                    Globals.geofencesAdded = true
                 }
                 addOnFailureListener {
                     Log.d(TAG, "duva: failed to add geofence" + exception.toString())
+                    Globals.geofencesAdded = false
                 }
             }
-
-            // TODO: fix so geofences aren't removed directly at app start
-            /*
-            geofencingClient.removeGeofences(geofencePendingIntent)?.run {
-                addOnSuccessListener {
-                    Log.i(TAG, "duva: geofence removed")
-                }
-                addOnFailureListener {
-                    Log.d(TAG, "duva: failed to remove geofence")
-                }
-            }
-            */
-
         }
     }
 

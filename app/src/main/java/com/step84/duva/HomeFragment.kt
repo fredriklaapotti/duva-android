@@ -53,6 +53,7 @@ class HomeFragment : Fragment() {
 
     private lateinit var txt_username: TextView
     private lateinit var txt_currentZone: TextView
+    private lateinit var txt_debug: TextView
     private lateinit var switch_toggleLarmButtons: Switch
     private lateinit var btn_larmRecord: ImageButton
     private lateinit var progress_soundRecording: ProgressBar
@@ -91,10 +92,12 @@ class HomeFragment : Fragment() {
 
         txt_username = view.findViewById(R.id.txt_username)
         txt_currentZone = view.findViewById(R.id.txt_currentZone)
+        txt_debug = view.findViewById(R.id.txt_debug)
         switch_toggleLarmButtons = view.findViewById(R.id.switch_toggleLarmButtons)
         btn_larmRecord = view.findViewById(R.id.btn_larmRecord)
         progress_soundRecording = view.findViewById(R.id.bar_progressSoundRecording)
         progress_soundRecording.visibility = View.INVISIBLE
+        txt_debug.visibility = View.INVISIBLE
 
         switch_toggleLarmButtons.setOnCheckedChangeListener { _, isChecked ->
             if(isChecked) {
@@ -314,6 +317,11 @@ class HomeFragment : Fragment() {
     fun updateUI() {
         switch_toggleLarmButtons.visibility = View.INVISIBLE
         btn_larmRecord.visibility = View.INVISIBLE
+
+        if(!Globals.geofencesAdded) {
+            txt_debug.visibility = View.VISIBLE
+            txt_debug.text = getString(R.string.alert_geofences)
+        }
 
         Log.i(TAG, "duva: user just before check for logged in and able to set alarm")
 

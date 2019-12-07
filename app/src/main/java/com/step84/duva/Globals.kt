@@ -13,6 +13,7 @@ object Globals {
     var activeZoneId: String = "0"
     var allZones: MutableList<Zone>? = null
     var clickedZone: String = "unknown"
+    var geofencesAdded: Boolean = true
 
     fun Globals() {
         // Something
