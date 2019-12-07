@@ -12,6 +12,7 @@
     <string name="txt_desc_currentZone">Current zone:</string>
     <string name="txt_currentZone">no zone detected</string>
     <string name="txt_debug">Text view for debugging purposes</string>
+    <string name="btn_sync">Force sync with database</string>
     <string name="btn_desc_larmRecord">Larm record button</string>
     <string name="switch_toggleLarmButtons">Enable alarms for current zone:</string>
     <string name="dialog_larm_title">Confirm enable alarm buttons</string>
@@ -28,7 +29,8 @@
     <string name="map_desc_radius">Radius</string>
 
     <string name="btn_signinAnonymous">Sign in (no e-mail required)</string>
-    <string name="btn_signin">Sign in (E-mail or Google)</string>
+    <string name="btn_signinMicrosoft">Sign in (Microsoft)</string>
+    <string name="btn_signin">Sign in (Google or e-mail)</string>
     <string name="btn_signout">Sign out</string>
 
     <string name="toast_notLoggedIn">Login to access settings</string>

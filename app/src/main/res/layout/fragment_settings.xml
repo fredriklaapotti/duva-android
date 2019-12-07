@@ -31,6 +31,17 @@
             android:layout_marginTop="30dp"/>
 
     <Button
+        android:text="@string/btn_signinMicrosoft"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/btn_signInMicrosoft"
+        android:drawableStart="@drawable/ic_baseline_account_circle_24px"
+        android:background="@color/colorPrimary"
+        android:textColor="@android:color/white"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="30dp"/>
+
+    <Button
             android:text="@string/btn_signout"
             android:layout_width="300dp"
             android:layout_height="wrap_content"

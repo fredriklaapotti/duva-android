@@ -240,7 +240,7 @@ class MainActivity : AppCompatActivity(),
         this.googleMapInterface = listener
     }
 
-    private fun setupUser() {
+    public fun setupUser() {
         Firestore.userListener(auth.currentUser, object: FirestoreListener<User> {
             override fun onStart() {
                 //Something
@@ -260,7 +260,7 @@ class MainActivity : AppCompatActivity(),
         })
     }
 
-    private fun setupSubscriptions() {
+    public fun setupSubscriptions() {
         Firestore.subscriptionsListener(auth.currentUser, object: FirestoreListener<MutableList<Subscription>> {
             override fun onStart() {
                 // Something
@@ -284,7 +284,7 @@ class MainActivity : AppCompatActivity(),
         })
     }
 
-    private fun setupZones() {
+    public fun setupZones() {
         Firestore.zonesListener(object: FirestoreListener<MutableList<Zone>> {
             override fun onStart() {
                 // Something
@@ -317,7 +317,7 @@ class MainActivity : AppCompatActivity(),
         })
     }
 
-    fun setupGeofences(zones: MutableList<Zone>) {
+    public fun setupGeofences(zones: MutableList<Zone>) {
         for(zone in zones) {
             Log.i(TAG, "duva: geofence zone found = " + zone.name)
             geofenceList.add(Geofence.Builder()

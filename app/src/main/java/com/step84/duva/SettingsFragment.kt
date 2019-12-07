@@ -12,12 +12,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Toast
+import androidx.annotation.NonNull
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.IdpResponse
+import com.google.android.gms.tasks.OnFailureListener
+import com.google.android.gms.tasks.OnSuccessListener
 import com.google.android.gms.tasks.Task
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.OAuthProvider
 import com.google.firebase.firestore.GeoPoint
 
 private const val ARG_PARAM1 = "param1"
@@ -41,6 +45,7 @@ class SettingsFragment : Fragment() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var btn_signInAnonymous: Button
+    private lateinit var btn_signInMicrosoft: Button
     private lateinit var btn_signIn: Button
     private lateinit var btn_signOut: Button
 
@@ -66,15 +71,18 @@ class SettingsFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_settings, container, false)
 
         btn_signInAnonymous = view.findViewById(R.id.btn_signInAnonymous)
+        btn_signInMicrosoft = view.findViewById(R.id.btn_signInMicrosoft)
         btn_signIn = view.findViewById(R.id.btn_signIn)
         btn_signOut = view.findViewById(R.id.btn_signout)
 
         if(auth.currentUser == null) {
             btn_signInAnonymous.visibility = View.VISIBLE
+            btn_signInMicrosoft.visibility = View.VISIBLE
             btn_signIn.visibility = View.VISIBLE
             btn_signOut.visibility = View.INVISIBLE
         } else {
             btn_signInAnonymous.visibility = View.INVISIBLE
+            btn_signInMicrosoft.visibility = View.INVISIBLE
             btn_signIn.visibility = View.INVISIBLE
             btn_signOut.visibility = View.VISIBLE
         }
@@ -96,6 +104,8 @@ class SettingsFragment : Fragment() {
                             }
                         })
                         btn_signInAnonymous.visibility = View.INVISIBLE
+                        btn_signInMicrosoft.visibility = View.INVISIBLE
+                        btn_signIn.visibility = View.INVISIBLE
                         btn_signOut.visibility = View.VISIBLE
                     } else {
                         Log.d(TAG, "duva: user failed to login anonymously")
@@ -112,26 +122,94 @@ class SettingsFragment : Fragment() {
                     .build(),
                 200)
             btn_signInAnonymous.visibility = View.INVISIBLE
+            btn_signInMicrosoft.visibility = View.INVISIBLE
             btn_signIn.visibility = View.INVISIBLE
             btn_signOut.visibility = View.VISIBLE
         }
 
+        btn_signInMicrosoft.setOnClickListener {
+            var providerMicrosoft = OAuthProvider.newBuilder("microsoft.com")
+
+            val pendingResultTask = auth.pendingAuthResult
+
+            if(pendingResultTask != null) {
+                Log.i(TAG, "duva: user login Microsoft pending result in progress")
+                pendingResultTask
+                    .addOnSuccessListener(
+                        object: OnSuccessListener<AuthResult> {
+                            override fun onSuccess(authResult: AuthResult) {
+                                Log.i(TAG, "duva: user login Microsoft already logging in via pending result")
+                            }
+                        })
+                    .addOnFailureListener(
+                        object: OnFailureListener {
+                            override fun onFailure(@NonNull e:Exception) {
+                                Log.d(TAG, "duva: user login Microsoft failed to login")
+                            }
+                        })
+            } else {
+                Log.i(TAG, "duva: user login Microsoft no pending login, starting login flow")
+
+                auth.startActivityForSignInWithProvider(context as Activity, providerMicrosoft.build())
+                    .addOnSuccessListener(
+                        object:OnSuccessListener<AuthResult> {
+                            override fun onSuccess(authResult: AuthResult) {
+                                Log.i(TAG, "duva: user login Microsoft user logged in successfully in startActivityForSignInWithProvider")
+
+
+                                if(authResult.additionalUserInfo.isNewUser) {
+                                    val newUser: User = User(uid = auth.uid.toString(), active = true)
+                                    Firestore.addUser(newUser, object: FirestoreCallback {
+                                        override fun onSuccess() {
+                                            Log.i(TAG, "duva: user ${auth.uid.toString()} successfully added to database")
+                                        }
+                                        override fun onFailed() {
+                                            Log.d(TAG, "duva: newly signed up user failed to add to database")
+                                        }
+                                    })
+                                }
+
+                                btn_signInAnonymous.visibility = View.INVISIBLE
+                                btn_signInMicrosoft.visibility = View.INVISIBLE
+                                btn_signIn.visibility = View.INVISIBLE
+                                btn_signOut.visibility = View.VISIBLE
+
+
+
+                            }
+                        }
+                    )
+                    .addOnFailureListener(
+                        object:OnFailureListener {
+                            override fun onFailure(@NonNull e: Exception) {
+                                Log.d(TAG, "duva: user login Microsoft user failed to login in startActivityForSignInWithProvider: $e")
+                            }
+                        })
+            }
+        }
+
         btn_signOut.setOnClickListener {
+            if(Globals.currentUser != null) {
+                Firestore.resetActiveSubscriptions(Globals.currentUser!!.uid, object: FirestoreCallback {
+                    override fun onSuccess() {
+                        Globals.currentUser = null
+                        Globals.currentSubscriptions = null
+                    }
+                    override fun onFailed() {}
+                })
+            }
+
             AuthUI.getInstance()
                 .signOut(context!!)
                 .addOnCompleteListener {
                     Toast.makeText(activity, "Signed out", Toast.LENGTH_LONG).show()
-                    if(Globals.currentUser != null) {
-                        Firestore.resetActiveSubscriptions(Globals.currentUser!!.uid, object: FirestoreCallback {
-                            override fun onSuccess() {
-                                Globals.currentUser = null
-                                Globals.currentSubscriptions = null
-                            }
-                            override fun onFailed() {}
-                        })
-                    }
+
+                    Globals.allZones?.let {allZones ->
+                        Firestore.unsubscribeFromAllTopics(allZones)
+                }
 
                     btn_signInAnonymous.visibility = View.VISIBLE
+                    btn_signInMicrosoft.visibility = View.VISIBLE
                     btn_signIn.visibility = View.VISIBLE
                     btn_signOut.visibility = View.INVISIBLE
                 }
@@ -164,6 +242,11 @@ class SettingsFragment : Fragment() {
                                 Log.d(TAG, "duva: newly signed up user failed to add to database")
                             }
                         })
+
+                        btn_signInAnonymous.visibility = View.INVISIBLE
+                        btn_signInMicrosoft.visibility = View.INVISIBLE
+                        btn_signIn.visibility = View.INVISIBLE
+                        btn_signOut.visibility = View.VISIBLE
 
 
 

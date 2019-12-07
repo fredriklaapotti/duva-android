@@ -57,6 +57,7 @@ class HomeFragment : Fragment() {
     private lateinit var switch_toggleLarmButtons: Switch
     private lateinit var btn_larmRecord: ImageButton
     private lateinit var progress_soundRecording: ProgressBar
+    private lateinit var btn_sync: Button
 
     enum class LarmState {
         Passive, Confirming, Larming
@@ -95,9 +96,11 @@ class HomeFragment : Fragment() {
         txt_debug = view.findViewById(R.id.txt_debug)
         switch_toggleLarmButtons = view.findViewById(R.id.switch_toggleLarmButtons)
         btn_larmRecord = view.findViewById(R.id.btn_larmRecord)
+        btn_sync = view.findViewById(R.id.btn_sync)
         progress_soundRecording = view.findViewById(R.id.bar_progressSoundRecording)
         progress_soundRecording.visibility = View.INVISIBLE
         txt_debug.visibility = View.INVISIBLE
+        btn_sync.visibility = View.VISIBLE
 
         switch_toggleLarmButtons.setOnCheckedChangeListener { _, isChecked ->
             if(isChecked) {
@@ -145,6 +148,12 @@ class HomeFragment : Fragment() {
                     btn_larmRecord.startAnimation(rotateAnimation)
                 }
             }
+        }
+
+        btn_sync.setOnClickListener {
+            (activity as MainActivity).setupUser()
+            (activity as MainActivity).setupSubscriptions()
+            (activity as MainActivity).setupZones()
         }
 
         updateUI()
