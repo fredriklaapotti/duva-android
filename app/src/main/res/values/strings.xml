@@ -25,6 +25,7 @@
 
     <string name="map_desc_radius">Radius</string>
 
+    <string name="btn_signinAnonymous">Sign in (no e-mail required)</string>
     <string name="btn_signin">Sign in (E-mail or Google)</string>
     <string name="btn_signout">Sign out</string>
 

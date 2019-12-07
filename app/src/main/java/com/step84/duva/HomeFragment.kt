@@ -114,6 +114,8 @@ class HomeFragment : Fragment() {
             }
         }
 
+        updateLocation(Globals.activeZoneId)
+
         /*
         btn_confirmLarm.setOnClickListener {
             AlertDialog.Builder(context)
@@ -142,7 +144,7 @@ class HomeFragment : Fragment() {
             }
         }
 
-        updateUI(auth.currentUser, (activity as MainActivity).currentUser)
+        updateUI()
 
         return view
     }
@@ -303,37 +305,38 @@ class HomeFragment : Fragment() {
         toggleLarmSoundRecording()
     }
 
-    fun updateUI(firebaseUser: FirebaseUser?, currentUser: User?, zoneid: String? = null) {
-        if(firebaseUser == null) {
-            Log.i(TAG, "duva: firebaseUser == null")
-            btn_larmRecord.visibility = View.INVISIBLE
-            progress_soundRecording.visibility = View.INVISIBLE
-        }
+    fun updateLocation(zoneid: String) {
+        Log.i(TAG, "duva: geofence updating HomeFragment, zoneid = $zoneid, Globals.activeZoneId = ${Globals.activeZoneId}")
+        //txt_currentZone.text = Globals.getZoneNameFromZoneId(zoneid).takeUnless { it == "unknown" } ?: getText(R.string.txt_currentZone)
+        txt_currentZone.text = Globals.getZoneNameFromZoneId(zoneid).takeUnless { it == "exit" } ?: "no zone detected"
+    }
 
-        if(firebaseUser != null) {
-            Log.i(TAG, "duva: firebaseUser is registered")
-            txt_username.text = firebaseUser.email
-            btn_larmRecord.visibility = View.INVISIBLE
+    fun updateUI() {
+        switch_toggleLarmButtons.visibility = View.INVISIBLE
+        btn_larmRecord.visibility = View.INVISIBLE
 
-            if(firebaseUser.isAnonymous) {
-                Log.i(TAG, "duva: firebaseUser is anonymous")
+        Log.i(TAG, "duva: user just before check for logged in and able to set alarm")
+
+        if(auth.currentUser != null) {
+            if(auth.currentUser!!.isAnonymous) {
+                txt_username.text = "anonymous (guest)"
+            } else {
+                txt_username.text = auth.currentUser!!.email
             }
 
-            if(firebaseUser.isEmailVerified) {
-                Log.i(TAG, "duva: firebaseUser is email verified")
+            if(!auth.currentUser!!.isAnonymous && Globals.activeZoneId != "0") {
+                Log.i(TAG, "duva: user is not anonymous and in a zone")
+                switch_toggleLarmButtons.visibility = View.VISIBLE
+                if(switch_toggleLarmButtons.isChecked) {
+                    btn_larmRecord.visibility = View.VISIBLE
+                }
+            } else {
+                Log.i(TAG, "duva: user is not anonymous or not in a zone")
             }
-        }
-
-        txt_currentZone.text = Globals.getCurrentZoneName(zoneid).takeUnless { it == "unknown" } ?: getText(R.string.txt_currentZone)
-
-        if(Globals.activeZone == "unknown" || firebaseUser == null) {
+        } else {
+            Log.i(TAG, "duva: user object is null")
             switch_toggleLarmButtons.visibility = View.INVISIBLE
             btn_larmRecord.visibility = View.INVISIBLE
-        } else {
-            switch_toggleLarmButtons.visibility = View.VISIBLE
-            if(switch_toggleLarmButtons.isChecked) {
-                btn_larmRecord.visibility = View.VISIBLE
-            }
         }
     }
 

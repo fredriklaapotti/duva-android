@@ -3,6 +3,7 @@ package com.step84.duva
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -10,7 +11,11 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Toast
 import com.firebase.ui.auth.AuthUI
+import com.google.android.gms.tasks.Task
+import com.google.firebase.Timestamp
+import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.GeoPoint
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
@@ -29,7 +34,10 @@ class SettingsFragment : Fragment() {
     private var param2: String? = null
     private var listener: OnFragmentInteractionListener? = null
 
+    private val TAG = "SettingsFragment"
+
     private lateinit var auth: FirebaseAuth
+    private lateinit var btn_signInAnonymous: Button
     private lateinit var btn_signIn: Button
     private lateinit var btn_signOut: Button
 
@@ -54,15 +62,41 @@ class SettingsFragment : Fragment() {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_settings, container, false)
 
+        btn_signInAnonymous = view.findViewById(R.id.btn_signInAnonymous)
         btn_signIn = view.findViewById(R.id.btn_signIn)
         btn_signOut = view.findViewById(R.id.btn_signout)
 
         if(auth.currentUser == null) {
+            btn_signInAnonymous.visibility = View.VISIBLE
             btn_signIn.visibility = View.VISIBLE
             btn_signOut.visibility = View.INVISIBLE
         } else {
+            btn_signInAnonymous.visibility = View.INVISIBLE
             btn_signIn.visibility = View.INVISIBLE
             btn_signOut.visibility = View.VISIBLE
+        }
+
+        btn_signInAnonymous.setOnClickListener {
+            Toast.makeText(activity, "Sign in anonymously...", Toast.LENGTH_LONG).show()
+            auth.signInAnonymously()
+                .addOnCompleteListener { task: Task<AuthResult> ->
+                    if(task.isSuccessful) {
+                        Log.d(TAG, "duva: user logged in anonymously")
+                        val newUser: User = User(uid = auth.uid.toString(), active = true)
+                        Firestore.addUser(newUser, object: FirestoreCallback {
+                            override fun onSuccess() {
+                                Log.i(TAG, "duva: user anonymous user successfully added to database")
+                            }
+                            override fun onFailed() {
+                                Log.d(TAG, "duva: user anonymous failed to add to database")
+                            }
+                        })
+                        btn_signInAnonymous.visibility = View.INVISIBLE
+                        btn_signOut.visibility = View.VISIBLE
+                    } else {
+                        Log.d(TAG, "duva: user failed to login anonymously")
+                    }
+                }
         }
 
         btn_signIn.setOnClickListener {

@@ -179,6 +179,22 @@ object Firestore {
             }
     }
 
+    fun addUser(obj: User, callback: FirestoreCallback) {
+        val db = FirebaseFirestore.getInstance()
+        val ref = db.collection("users").document()
+        obj.id = ref.id
+        ref
+            .set(obj)
+            .addOnSuccessListener {
+                Log.i(TAG, "duva: user successfully added")
+                callback.onSuccess()
+            }
+            .addOnFailureListener {exception ->
+                Log.d(TAG, "duva: user failed to be added", exception)
+                callback.onFailed()
+            }
+    }
+
     fun addSubscription(obj: Subscription, callback: FirestoreCallback) {
         val db = FirebaseFirestore.getInstance()
         val ref = db.collection("subscriptions").document()

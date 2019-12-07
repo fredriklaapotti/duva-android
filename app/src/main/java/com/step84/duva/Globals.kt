@@ -56,8 +56,8 @@ object Globals {
         return zoneName
     }
 
-    fun getZoneNameFromZoneId(zoneid: String): String {
-        var zoneName = "unknown"
+    fun getZoneNameFromZoneId(zoneid: String?): String {
+        var zoneName = "no zone detected"
         if(allZones != null) {
             for(zone in allZones!!) {
                 if(zone.id == zoneid)

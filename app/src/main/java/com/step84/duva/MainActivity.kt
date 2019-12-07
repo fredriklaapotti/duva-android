@@ -48,11 +48,20 @@ class MainActivity : AppCompatActivity(),
     private lateinit var locationRequest: LocationRequest
     private lateinit var geofencingClient: GeofencingClient
     private var geofenceList: MutableList<Geofence> = mutableListOf()
+
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(this, GeofenceTransitionsIntentService::class.java)
         Log.i(TAG, "duva: geofence starting intent service")
+        //PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
         PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
+    /*
+    private val geofencePendingIntent: PendingIntent by lazy {
+        Log.i(TAG, "duva: geofence intent after getBroadcast()")
+        val intent = Intent(this, GeofenceBroadcastReceiver::class.java)
+        PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+    }
+     */
 
     private val mOnNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
         when (item.itemId) {
@@ -77,7 +86,7 @@ class MainActivity : AppCompatActivity(),
             Log.i(TAG, "duva: geofence received intent in onReceive() in MainActivity")
             when(intent?.action) {
                 "com.step84.duva.GEOFENCE_ENTER" -> geofenceTransition("enter", intent.extras!!.getString("zoneid", "0"))
-                "com.step84.duva.GEOFENCE_DWELL" -> geofenceTransition("dwell", intent.extras.getString("zoneid", "0"))
+                "com.step84.duva.GEOFENCE_DWELL" -> geofenceTransition("dwell", intent.extras!!.getString("zoneid", "0"))
                 "com.step84.duva.GEOFENCE_EXIT" -> geofenceTransition("exit", intent.extras!!.getString("zoneid", "0"))
             }
         }
@@ -96,10 +105,12 @@ class MainActivity : AppCompatActivity(),
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
-        switchFragment(HomeFragment(), "HomeFragment")
         setupPermission(Manifest.permission.ACCESS_FINE_LOCATION)
         setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        setupPermission(Manifest.permission.RECORD_AUDIO)
+
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
+        switchFragment(HomeFragment(), "HomeFragment")
 
         val firestore = FirebaseFirestore.getInstance()
         val settings = FirebaseFirestoreSettings.Builder()
@@ -115,7 +126,6 @@ class MainActivity : AppCompatActivity(),
         setupSubscriptions()
         setupZones()
         setMapListener(ZonesFragment())
-        setupPermission(Manifest.permission.RECORD_AUDIO)
 
         Log.i(TAG, "duva: currentUser object in MainActivity = " + currentUser?.lastLocation) // Should return null
     }
@@ -170,10 +180,11 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun startLocationUpdates() {
+        Log.i(TAG, "duva: in startLocationUpdates()")
         if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
             locationRequest = LocationRequest().apply {
-                interval = 10 * 1000
-                fastestInterval = 5 * 1000
+                interval = 60 * 1000
+                fastestInterval = 20 * 1000
                 priority = LocationRequest.PRIORITY_HIGH_ACCURACY
             }
 
@@ -206,9 +217,12 @@ class MainActivity : AppCompatActivity(),
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
+                Log.i(TAG, "duva: geofence location in onLocationResult()")
                 for(location in locationResult.locations) {
+                    //Log.i(TAG, "duva: location geofence looping in registerLocationListener()")
                     currentLocation = GeoPoint(location.latitude, location.longitude)
                     Globals.currentLocation = GeoPoint(location.latitude, location.longitude)
+                    //Log.i(TAG, "duva: location geofence currentLocation = " + currentLocation.toString())
                     //googleMapInterface?.onLocationUpdate(GeoPoint(location.latitude, location.longitude))
                 }
             }
@@ -216,7 +230,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun stopLocationUpdates() {
-        fusedLocationClient.removeLocationUpdates(locationCallback)
+        //fusedLocationClient.removeLocationUpdates(locationCallback)
         Log.i(TAG, "Location updates stopped")
     }
 
@@ -304,10 +318,10 @@ class MainActivity : AppCompatActivity(),
             Log.i(TAG, "duva: geofence adding or removing geofences")
             geofencingClient.addGeofences(getGeofencingRequest(), geofencePendingIntent)?.run {
                 addOnSuccessListener {
-                    Log.i(TAG, "duva: geofence added")
+                    Log.i(TAG, "duva: geofence added, geofencePendingIntent = " + geofencePendingIntent.toString())
                 }
                 addOnFailureListener {
-                    Log.d(TAG, "duva: failed to add geofence")
+                    Log.d(TAG, "duva: failed to add geofence" + exception.toString())
                 }
             }
 
@@ -341,6 +355,8 @@ class MainActivity : AppCompatActivity(),
         when(transition) {
             "enter" -> {
                 Log.i(TAG, "duva: geofence geofenceTransition() enter in MainActivity: $zoneid")
+                Globals.activeZoneId = zoneid
+                updateHomeFragment(zoneid)
 
                 // Separate paths for logged in users since we also update database if logged in
                 if(auth.currentUser != null && currentUser != null) {
@@ -368,11 +384,11 @@ class MainActivity : AppCompatActivity(),
                         override fun onFailed() {}
                     })
                 }
-
-                updateHomeFragment(zoneid)
             }
             "dwell" -> {
                 Log.i(TAG, "duva: geofence geofenceTransition() dwell in MainActivity: $zoneid")
+                Globals.activeZoneId = zoneid
+                updateHomeFragment(zoneid)
 
                 // Separate paths for logged in users since we also update database if logged in
                 if(auth.currentUser != null && currentUser != null) {
@@ -392,11 +408,12 @@ class MainActivity : AppCompatActivity(),
                         override fun onFailed() {}
                     })
                 }
-
-                updateHomeFragment(zoneid)
             }
             "exit" -> {
                 Log.i(TAG, "duva: geofence geofenceTransition() exit in MainActivity: $zoneid")
+                Globals.activeZoneId = "0"
+                updateHomeFragment("exit")
+
                 if(auth.currentUser != null && currentUser != null) {
                     val subscriptionid: String = getSubscriptionidFromZoneid(zoneid)
                     Firestore.updateField("subscriptions", subscriptionid, "active", false, object: FirestoreCallback {
@@ -409,16 +426,17 @@ class MainActivity : AppCompatActivity(),
                         override fun onFailed() {}
                     })
                 }
-
-                updateHomeFragment("exit")
             }
         }
     }
 
-    fun updateHomeFragment(zoneid: String? = null) {
+    fun updateHomeFragment(zoneid: String = "unknown") {
         val fragment = supportFragmentManager.findFragmentByTag("HomeFragment")
         if(fragment != null && fragment is HomeFragment) {
-            fragment.updateUI(auth.currentUser, currentUser, zoneid)
+            fragment.updateUI()
+            if(zoneid != "unknown") {
+                fragment.updateLocation(zoneid)
+            }
         }
     }
 
@@ -489,6 +507,9 @@ class MainActivity : AppCompatActivity(),
                     Log.i(TAG, "Permission: " + permissions[0] + "has been granted")
                 } else {
                     Log.d(TAG, "Permission: " + permissions[0] + "has been denied")
+                    setupUser()
+                    setupSubscriptions()
+                    setupZones()
                 }
             }
             requestCodeWriteExternalStorage -> {

@@ -9,6 +9,17 @@
         android:gravity="center_vertical">
 
     <Button
+        android:text="@string/btn_signinAnonymous"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/btn_signInAnonymous"
+        android:drawableStart="@drawable/ic_baseline_account_circle_24px"
+        android:background="@color/colorPrimary"
+        android:textColor="@android:color/white"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="30dp"/>
+
+    <Button
             android:text="@string/btn_signin"
             android:layout_width="300dp"
             android:layout_height="wrap_content"
@@ -25,5 +36,6 @@
             android:layout_height="wrap_content"
             android:id="@+id/btn_signout"
             android:background="@color/design_default_color_secondary_variant"
-            android:layout_gravity="center_horizontal"/>
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="30dp"/>/>
 </LinearLayout>
