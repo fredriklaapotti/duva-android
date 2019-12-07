@@ -89,6 +89,7 @@ class SettingsFragment : Fragment() {
                         Firestore.addUser(newUser, object: FirestoreCallback {
                             override fun onSuccess() {
                                 Log.i(TAG, "duva: user anonymous user successfully added to database")
+                                Globals.currentUser = newUser
                             }
                             override fun onFailed() {
                                 Log.d(TAG, "duva: user anonymous failed to add to database")

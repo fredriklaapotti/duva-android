@@ -339,7 +339,7 @@ class HomeFragment : Fragment() {
                     btn_larmRecord.visibility = View.VISIBLE
                 }
             } else {
-                Log.i(TAG, "duva: user is not anonymous or not in a zone")
+                Log.i(TAG, "duva: user is anonymous or not in a zone")
             }
         } else {
             Log.i(TAG, "duva: user object is null")

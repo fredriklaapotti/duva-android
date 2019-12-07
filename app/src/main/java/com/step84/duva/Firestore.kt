@@ -279,4 +279,19 @@ object Firestore {
                 Log.d(TAG, "duva: FCM failed to unsubscribe from topic: ", exception)
             }
     }
+
+    fun unsubscribeFromAllTopics(allZones: MutableList<Zone>) {
+        val iterator = allZones.listIterator()
+        for(item in iterator) {
+            Firestore.unsubscribeFromTopic(item.id, object: FirestoreCallback {
+                override fun onSuccess() {
+                    Log.i(TAG, "duva: user zones unsubscribed from ${item.id}")
+                }
+
+                override fun onFailed() {
+                    Log.d(TAG, "duva: user zonez failed to unsubscribe from ${item.id}")
+                }
+            })
+        }
+    }
 }

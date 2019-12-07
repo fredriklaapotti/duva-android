@@ -293,6 +293,21 @@ class MainActivity : AppCompatActivity(),
             override fun onSuccess(obj: MutableList<Zone>) {
                 allZones = obj
                 Globals.allZones = obj
+                Firestore.unsubscribeFromAllTopics(obj)
+
+                // This should be rewritten noasync so we can be sure all the topics are unsubscribed from before we re-subscribe topics from database
+                Globals.currentSubscriptions?.forEach { subscription ->
+                    Firestore.subscribeToTopic(subscription.zone, object: FirestoreCallback {
+                        override fun onSuccess() {
+                            Log.i(TAG, "duva: user zone subscribe to stored subscription in database = ${subscription.zone}")
+                        }
+
+                        override fun onFailed() {
+                            Log.d(TAG, "duva: user zone subscribe failed from database for ${subscription.zone}")
+                        }
+                    })
+                }
+
                 setupGeofences(obj)
             }
 
@@ -412,10 +427,25 @@ class MainActivity : AppCompatActivity(),
                         override fun onFailed() {}
                     })
 
-                    Firestore.unsubscribeFromTopic(zoneid, object: FirestoreCallback {
-                        override fun onSuccess() {}
-                        override fun onFailed() {}
-                    })
+                    val oneSelected: Subscription
+                    val selectedSubscription = Globals.currentSubscriptions?.filter { it.zone.equals(zoneid) }
+                    if(selectedSubscription != null && selectedSubscription.size == 1) {
+                        selectedSubscription?.let {
+                            oneSelected = selectedSubscription[0]
+                            if(oneSelected.zone.equals(zoneid)) {
+                                Log.i(TAG, "duva: FCM geofence DEBUG zone exit equals a subscribed zone in database - keeping topic subscription")
+                            } else {
+                                Log.i(TAG, "duva: FCM geofence DEBUG zone exit does NOT equal a subscribed zone in the database")
+                            }
+                        }
+                    } else {
+                        Log.i(TAG, "duva: FCM geofence DEBUG zone exit didn't find corresponding subscription in database - unsubscribing from topic")
+                        Firestore.unsubscribeFromTopic(zoneid, object: FirestoreCallback {
+                            override fun onSuccess() {}
+                            override fun onFailed() {}
+                        })
+                    }
+
                 }
             }
         }
