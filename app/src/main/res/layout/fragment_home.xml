@@ -132,11 +132,20 @@
     </LinearLayout>
 
     <Button
+        android:id="@+id/btn_forceFCMSubscribe"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="50px"
+        android:layout_marginTop="50px"
+        android:layout_marginRight="50px"
+        android:text="@string/btn_forceFCMSubscribe" />
+
+    <Button
         android:id="@+id/btn_sync"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="50px"
-        android:layout_marginTop="100px"
+        android:layout_marginTop="25px"
         android:layout_marginRight="50px"
         android:text="@string/btn_sync" />
 

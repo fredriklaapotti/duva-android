@@ -58,6 +58,7 @@ class HomeFragment : Fragment() {
     private lateinit var btn_larmRecord: ImageButton
     private lateinit var progress_soundRecording: ProgressBar
     private lateinit var btn_sync: Button
+    private lateinit var btn_forceFCMSubscribe: Button
 
     enum class LarmState {
         Passive, Confirming, Larming
@@ -97,10 +98,12 @@ class HomeFragment : Fragment() {
         switch_toggleLarmButtons = view.findViewById(R.id.switch_toggleLarmButtons)
         btn_larmRecord = view.findViewById(R.id.btn_larmRecord)
         btn_sync = view.findViewById(R.id.btn_sync)
+        btn_forceFCMSubscribe = view.findViewById(R.id.btn_forceFCMSubscribe)
         progress_soundRecording = view.findViewById(R.id.bar_progressSoundRecording)
         progress_soundRecording.visibility = View.INVISIBLE
         txt_debug.visibility = View.INVISIBLE
         btn_sync.visibility = View.VISIBLE
+        btn_forceFCMSubscribe.visibility = View.INVISIBLE
 
         switch_toggleLarmButtons.setOnCheckedChangeListener { _, isChecked ->
             if(isChecked) {
@@ -147,6 +150,21 @@ class HomeFragment : Fragment() {
                     val rotateAnimation: Animation = AnimationUtils.loadAnimation(context!!, R.anim.blink)
                     btn_larmRecord.startAnimation(rotateAnimation)
                 }
+            }
+        }
+
+        btn_forceFCMSubscribe.setOnClickListener {
+            Globals.activeZoneId?.let {zoneid ->
+                Firestore.subscribeToTopic(zoneid, object: FirestoreCallback {
+                    override fun onSuccess() {
+                        val toastText = getText(R.string.toast_forceFCMSubscribeSuccess).toString() + Globals.getZoneNameFromZoneId(zoneid)
+                        Toast.makeText(context, toastText, Toast.LENGTH_LONG).show()
+                    }
+                    override fun onFailed() {
+                        val toastText = getText(R.string.toast_forceFCMSubscribeFailure).toString() + Globals.getZoneNameFromZoneId(zoneid)
+                        Toast.makeText(context, toastText, Toast.LENGTH_LONG).show()
+                    }
+                })
             }
         }
 
@@ -270,7 +288,9 @@ class HomeFragment : Fragment() {
                     Firestore.addObject("alarms", alarm, object: FirestoreCallback {
                         override fun onSuccess() {
                             Log.i(TAG, "duva: returned in listener onSuccess alarm added")
-                            Toast.makeText(context, R.string.toast_alarmSent, Toast.LENGTH_LONG).show()
+                            if(context != null) {
+                                Toast.makeText(context, R.string.toast_alarmSent, Toast.LENGTH_LONG).show()
+                            }
                             btn_larmRecord.visibility = View.INVISIBLE
                             switch_toggleLarmButtons.isChecked = false
                         }
@@ -321,6 +341,12 @@ class HomeFragment : Fragment() {
         Log.i(TAG, "duva: geofence updating HomeFragment, zoneid = $zoneid, Globals.activeZoneId = ${Globals.activeZoneId}")
         //txt_currentZone.text = Globals.getZoneNameFromZoneId(zoneid).takeUnless { it == "unknown" } ?: getText(R.string.txt_currentZone)
         txt_currentZone.text = Globals.getZoneNameFromZoneId(zoneid).takeUnless { it == "exit" } ?: "no zone detected"
+
+        if(auth.currentUser != null && Globals.activeZoneId != "0") {
+            btn_forceFCMSubscribe.visibility = View.VISIBLE
+        } else {
+            btn_forceFCMSubscribe.visibility = View.INVISIBLE
+        }
     }
 
     fun updateUI() {
@@ -350,6 +376,13 @@ class HomeFragment : Fragment() {
             } else {
                 Log.i(TAG, "duva: user is anonymous or not in a zone")
             }
+
+            if(Globals.activeZoneId != "0") {
+                btn_forceFCMSubscribe.visibility = View.VISIBLE
+            } else {
+                btn_forceFCMSubscribe.visibility = View.INVISIBLE
+            }
+
         } else {
             Log.i(TAG, "duva: user object is null")
             switch_toggleLarmButtons.visibility = View.INVISIBLE

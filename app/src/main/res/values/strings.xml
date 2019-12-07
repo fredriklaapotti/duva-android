@@ -13,11 +13,14 @@
     <string name="txt_currentZone">no zone detected</string>
     <string name="txt_debug">Text view for debugging purposes</string>
     <string name="btn_sync">Force sync with database</string>
+    <string name="btn_forceFCMSubscribe">Force zone subscription (FCM)</string>
     <string name="btn_desc_larmRecord">Larm record button</string>
     <string name="switch_toggleLarmButtons">Enable alarms for current zone:</string>
     <string name="dialog_larm_title">Confirm enable alarm buttons</string>
     <string name="dialog_larm_message">Are you sure you want to enable alarm buttons? Sending an alarm may override recipients sound settings. Use with caution.</string>
     <string name="toast_alarmSent">Alarm sent successfully</string>
+    <string name="toast_forceFCMSubscribeSuccess">Successfully subscribed to: </string>
+    <string name="toast_forceFCMSubscribeFailure">Failed subscribing to: </string>
     <string name="permission_button_ok">OK</string>
     <string name="permission_title">Permission required</string>
     <string name="permission_location_message">Permission to access location is required for this app</string>
