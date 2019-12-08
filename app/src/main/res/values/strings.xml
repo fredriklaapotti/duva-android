@@ -12,8 +12,8 @@
     <string name="txt_desc_currentZone">Current zone:</string>
     <string name="txt_currentZone">no zone detected</string>
     <string name="txt_debug">Text view for debugging purposes</string>
-    <string name="btn_sync">Force sync with database</string>
-    <string name="btn_forceFCMSubscribe">Force zone subscription (FCM)</string>
+    <string name="btn_forceFCMSubscribe">Manually check in to zone</string>
+    <string name="btn_sync">Reload all data from server</string>
     <string name="btn_desc_larmRecord">Larm record button</string>
     <string name="switch_toggleLarmButtons">Enable alarms for current zone:</string>
     <string name="dialog_larm_title">Confirm enable alarm buttons</string>

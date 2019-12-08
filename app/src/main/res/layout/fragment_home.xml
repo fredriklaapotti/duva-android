@@ -13,7 +13,7 @@
             android:orientation="horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="50dp"
+            android:layout_marginTop="10dp"
             android:layout_gravity="center_horizontal">
 
         <ImageView
@@ -44,7 +44,7 @@
             android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
+            android:layout_marginTop="10dp"
             android:layout_gravity="center_horizontal">
 
         <TextView
@@ -91,9 +91,9 @@
         android:id="@+id/txt_debug"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="50px"
-        android:layout_marginTop="50px"
-        android:layout_marginRight="50px"
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginRight="10dp"
         android:text="@string/txt_debug" />
 
     <Switch
@@ -110,14 +110,14 @@
             android:layout_width="291dp"
             android:layout_height="wrap_content"
             android:id="@+id/bar_progressSoundRecording"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="10dp"
             android:layout_gravity="center_horizontal"/>
 
     <LinearLayout
             android:orientation="horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
+            android:layout_marginTop="10dp"
             android:layout_gravity="center_horizontal">
 
         <ImageButton
@@ -131,22 +131,36 @@
                 />
     </LinearLayout>
 
-    <Button
-        android:id="@+id/btn_forceFCMSubscribe"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="50px"
-        android:layout_marginTop="50px"
-        android:layout_marginRight="50px"
-        android:text="@string/btn_forceFCMSubscribe" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <Button
-        android:id="@+id/btn_sync"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="50px"
-        android:layout_marginTop="25px"
-        android:layout_marginRight="50px"
-        android:text="@string/btn_sync" />
+        <Button
+            android:id="@+id/btn_forceFCMSubscribe"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="50dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginRight="50dp"
+            android:background="#F5F2F2"
+            android:drawableStart="@android:drawable/btn_star_big_on"
+            android:paddingStart="25dp"
+            android:paddingEnd="25dp"
+            android:text="@string/btn_forceFCMSubscribe" />
+
+        <Button
+            android:id="@+id/btn_sync"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="50dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginRight="50dp"
+            android:background="#F5F2F2"
+            android:drawableStart="@android:drawable/ic_menu_rotate"
+            android:paddingStart="25dp"
+            android:paddingEnd="25dp"
+            android:text="@string/btn_sync" />
+    </LinearLayout>
 
 </LinearLayout>

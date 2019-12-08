@@ -107,29 +107,30 @@ class MainActivity : AppCompatActivity(),
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        Log.i(TAG, "duva: startup before setup permissions")
+        /*
         setupPermission(Manifest.permission.ACCESS_FINE_LOCATION)
         setupPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         setupPermission(Manifest.permission.RECORD_AUDIO)
-
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
-        switchFragment(HomeFragment(), "HomeFragment")
-
-        val firestore = FirebaseFirestore.getInstance()
-        val settings = FirebaseFirestoreSettings.Builder()
-            .setTimestampsInSnapshotsEnabled(true)
-            .build()
-        firestore.firestoreSettings = settings
+        */
+        val permissionsNeeded = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO)
+        ActivityCompat.requestPermissions(this, permissionsNeeded, 200)
 
         auth = FirebaseAuth.getInstance()
-        geofencingClient = LocationServices.getGeofencingClient(this)
-        LocalBroadcastManager.getInstance(this).registerReceiver(br, filter)
-
-        setupUser()
-        setupSubscriptions()
-        setupZones()
         setMapListener(ZonesFragment())
+        checkPermissionsAndInitialize()
 
         Log.i(TAG, "duva: currentUser object in MainActivity = " + currentUser?.lastLocation) // Should return null
+    }
+
+    fun checkPermissionsAndInitialize() {
+        if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION) && checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && checkPermission(Manifest.permission.RECORD_AUDIO)) {
+            Log.i(TAG, "duva: startup all permissions ok, resuming")
+            Globals.permissionsGranted = true
+            setupUser()
+            setupSubscriptions()
+            setupZones()
+        }
     }
 
     override fun onFragmentInteraction(uri: Uri) {
@@ -164,7 +165,9 @@ class MainActivity : AppCompatActivity(),
 
     override fun onDestroy() {
         super.onDestroy()
-        unregisterReceiver(br)
+        if(Globals.permissionsGranted) {
+            unregisterReceiver(br)
+        }
     }
 
     // TODO: update this, placeholder for auth callback
@@ -173,11 +176,13 @@ class MainActivity : AppCompatActivity(),
         Log.i(TAG, "duva: in onActivityResult")
 
         Log.i(TAG, "duva: requestCode == 200 in onActivityResult")
-        auth = FirebaseAuth.getInstance()
-        if(auth.currentUser != null) {
-            setupUser()
-            setupSubscriptions()
-            setupZones()
+        if(Globals.permissionsGranted) {
+            auth = FirebaseAuth.getInstance()
+            if(auth.currentUser != null) {
+                setupUser()
+                setupSubscriptions()
+                setupZones()
+            }
         }
     }
 
@@ -196,7 +201,7 @@ class MainActivity : AppCompatActivity(),
             val task: Task<LocationSettingsResponse> = client.checkLocationSettings(builder.build())
 
             task.addOnSuccessListener { locationSettingsResponse ->
-                //
+                Log.i(TAG, "duva: locationSettingsResponse task successful")
             }
 
             task.addOnFailureListener { exception ->
@@ -204,7 +209,7 @@ class MainActivity : AppCompatActivity(),
                     try {
                         //exception.startResolutionForResult(this@MainActivity, REQUEST_CHECK_SETTINGS)
                     } catch (sendEx: IntentSender.SendIntentException) {
-                        // Ignore the error
+                        Log.d(TAG, "duva: locationSettingsResponse failed")
                     }
                 }
             }
@@ -483,6 +488,11 @@ class MainActivity : AppCompatActivity(),
         return subscriptionid
     }
 
+    /**
+     * The following two functions, setupPermission() and makeRequest(), were too convoluted for this use case.
+     * Instead we request all permissions at once and set a global variable if they pass
+     */
+    /*
     private fun setupPermission(permissionString: String) {
         val permission = ContextCompat.checkSelfPermission(this, permissionString)
 
@@ -519,9 +529,11 @@ class MainActivity : AppCompatActivity(),
 
         ActivityCompat.requestPermissions(this, arrayOf(permissionString), requestCode)
     }
+    */
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        /*
         when(requestCode) {
             requestCodeAccessFineLocation -> {
                 if(grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
@@ -548,6 +560,22 @@ class MainActivity : AppCompatActivity(),
                 }
             }
         }
+
+        */
+
+        val firestore = FirebaseFirestore.getInstance()
+        val settings = FirebaseFirestoreSettings.Builder()
+            .setTimestampsInSnapshotsEnabled(true)
+            .build()
+        firestore.firestoreSettings = settings
+
+        geofencingClient = LocationServices.getGeofencingClient(this)
+        LocalBroadcastManager.getInstance(this).registerReceiver(br, filter)
+
+        checkPermissionsAndInitialize()
+
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
+        switchFragment(HomeFragment(), "HomeFragment")
     }
 
     private fun checkPermission(permissionString: String): Boolean = ContextCompat.checkSelfPermission(this, permissionString) == PackageManager.PERMISSION_GRANTED

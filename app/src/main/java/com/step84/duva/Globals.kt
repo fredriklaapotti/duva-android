@@ -14,6 +14,7 @@ object Globals {
     var allZones: MutableList<Zone>? = null
     var clickedZone: String = "unknown"
     var geofencesAdded: Boolean = true
+    var permissionsGranted: Boolean = false
 
     fun Globals() {
         // Something

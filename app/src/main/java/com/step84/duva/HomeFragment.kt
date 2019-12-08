@@ -157,11 +157,11 @@ class HomeFragment : Fragment() {
             Globals.activeZoneId?.let {zoneid ->
                 Firestore.subscribeToTopic(zoneid, object: FirestoreCallback {
                     override fun onSuccess() {
-                        val toastText = getText(R.string.toast_forceFCMSubscribeSuccess).toString() + Globals.getZoneNameFromZoneId(zoneid)
+                        val toastText = getText(R.string.toast_forceFCMSubscribeSuccess).toString() + " " + Globals.getZoneNameFromZoneId(zoneid)
                         Toast.makeText(context, toastText, Toast.LENGTH_LONG).show()
                     }
                     override fun onFailed() {
-                        val toastText = getText(R.string.toast_forceFCMSubscribeFailure).toString() + Globals.getZoneNameFromZoneId(zoneid)
+                        val toastText = getText(R.string.toast_forceFCMSubscribeFailure).toString() + " " + Globals.getZoneNameFromZoneId(zoneid)
                         Toast.makeText(context, toastText, Toast.LENGTH_LONG).show()
                     }
                 })
