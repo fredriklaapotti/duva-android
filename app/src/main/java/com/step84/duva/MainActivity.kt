@@ -1,16 +1,21 @@
 package com.step84.duva
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.*
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -33,6 +38,7 @@ class MainActivity : AppCompatActivity(),
     SettingsFragment.OnFragmentInteractionListener {
 
     private val TAG = "MainActivity"
+    private val CHANNELID = "0";
     private val requestCodeAccessFineLocation = 101
     private val requestCodeWriteExternalStorage = 102
     private val requestCodeRecordAudio = 103
@@ -119,6 +125,7 @@ class MainActivity : AppCompatActivity(),
         auth = FirebaseAuth.getInstance()
         setMapListener(ZonesFragment())
         checkPermissionsAndInitialize()
+        createNotificationChannel()
 
         Log.i(TAG, "duva: currentUser object in MainActivity = " + currentUser?.lastLocation) // Should return null
     }
@@ -229,7 +236,16 @@ class MainActivity : AppCompatActivity(),
                     //Log.i(TAG, "duva: location geofence looping in registerLocationListener()")
                     currentLocation = GeoPoint(location.latitude, location.longitude)
                     Globals.currentLocation = GeoPoint(location.latitude, location.longitude)
-                    //Log.i(TAG, "duva: location geofence currentLocation = " + currentLocation.toString())
+                    /*
+                    if(Globals.currentUser != null && Globals.currentUser!!.id != "0") {
+                        Firestore.updateField("users", Globals.currentUser!!.id, "lastLocation", Globals.currentLocation, object: FirestoreCallback {
+                            override fun onSuccess() {}
+                            override fun onFailed() {}
+                        })
+                    }
+                    */
+
+                    Log.i(TAG, "duva: location geofence currentLocation = " + currentLocation.toString())
                     //googleMapInterface?.onLocationUpdate(GeoPoint(location.latitude, location.longitude))
                 }
             }
@@ -338,14 +354,16 @@ class MainActivity : AppCompatActivity(),
 
         if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
             Log.i(TAG, "duva: geofence adding or removing geofences")
-            geofencingClient.addGeofences(getGeofencingRequest(), geofencePendingIntent)?.run {
-                addOnSuccessListener {
-                    Log.i(TAG, "duva: geofence added, geofencePendingIntent = " + geofencePendingIntent.toString())
-                    Globals.geofencesAdded = true
-                }
-                addOnFailureListener {
-                    Log.d(TAG, "duva: failed to add geofence" + exception.toString())
-                    Globals.geofencesAdded = false
+            if(this::geofencingClient.isInitialized) {
+                geofencingClient.addGeofences(getGeofencingRequest(), geofencePendingIntent)?.run {
+                    addOnSuccessListener {
+                        Log.i(TAG, "duva: geofence added, geofencePendingIntent = " + geofencePendingIntent.toString())
+                        Globals.geofencesAdded = true
+                    }
+                    addOnFailureListener {
+                        Log.d(TAG, "duva: failed to add geofence" + exception.toString())
+                        Globals.geofencesAdded = false
+                    }
                 }
             }
         }
@@ -395,6 +413,8 @@ class MainActivity : AppCompatActivity(),
                         override fun onFailed() {}
                     })
                 }
+
+                createNotification("enter a zone", zoneid)
             }
             "dwell" -> {
                 Log.i(TAG, "duva: geofence geofenceTransition() dwell in MainActivity: $zoneid")
@@ -419,6 +439,7 @@ class MainActivity : AppCompatActivity(),
                         override fun onFailed() {}
                     })
                 }
+                createNotification("dwell in zone", zoneid)
             }
             "exit" -> {
                 Log.i(TAG, "duva: geofence geofenceTransition() exit in MainActivity: $zoneid")
@@ -452,7 +473,20 @@ class MainActivity : AppCompatActivity(),
                     }
 
                 }
+                createNotification("exit zone", zoneid)
             }
+        }
+    }
+
+    fun createNotification(title: String, content: String) {
+        val builder = NotificationCompat.Builder(this, CHANNELID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(title)
+            .setContentText(content)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+
+        with(NotificationManagerCompat.from(this)) {
+            notify(1, builder.build())
         }
     }
 
@@ -579,4 +613,18 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun checkPermission(permissionString: String): Boolean = ContextCompat.checkSelfPermission(this, permissionString) == PackageManager.PERMISSION_GRANTED
+
+    private fun createNotificationChannel() {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = getString(R.string.notification_channel)
+            val descriptionText = getString(R.string.notification_description)
+            val importance = NotificationManager.IMPORTANCE_LOW
+            val channel = NotificationChannel(CHANNELID, name, importance).apply {
+                description = descriptionText
+            }
+            val notificationManager: NotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+            Log.i(TAG, "duva: notification channel created")
+        }
+    }
 }

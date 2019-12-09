@@ -87,9 +87,10 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
         toggleUI(false)
 
         btn_updateSettings.setOnClickListener {
+            /*
             if(switch_settingNotice.tag != null && switch_settingOverrideSound.tag != null && btn_updateSettings.tag != null) {
                 val subscription: Subscription = switch_settingNotice.tag as Subscription
-                var fieldvalues: MutableMap<String, Boolean> = mutableMapOf()
+                val fieldvalues: MutableMap<String, Boolean> = mutableMapOf()
                 fieldvalues["setting_alarm_notice"] = switch_settingNotice.isChecked
                 fieldvalues["setting_alarm_override_sound"]  = switch_settingOverrideSound.isChecked
                 Firestore.batchUpdate("subscriptions", subscription.id, fieldvalues, object: FirestoreCallback {
@@ -97,6 +98,28 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
                         Toast.makeText(context!!, "${getText(R.string.toast_updateZoneSuccess)}", Toast.LENGTH_LONG).show()
                     }
                     override fun onFailed() {
+                        Toast.makeText(context!!, "${getText(R.string.toast_updateZoneFailed)}", Toast.LENGTH_LONG).show()
+                    }
+                })
+            }
+             */
+
+            Globals.clickedZoneObject?.let { zoneObject ->
+                val fieldvalues: MutableMap<String, Boolean> = mutableMapOf()
+                fieldvalues["setting_alarm_notice"] = switch_settingNotice.isChecked
+                fieldvalues["setting_alarm_override_sound"]  = switch_settingOverrideSound.isChecked
+
+                Firestore.updateSubscription(zoneObject, fieldvalues, object: FirestoreCallback {
+                    override fun onSuccess() {
+                        Log.i(TAG, "duva: successfully updated zone in ZonesFragment")
+                        btn_unsubscribeZone.visibility = View.VISIBLE
+                        btn_subscribeZone.visibility = View.INVISIBLE
+                        btn_updateSettings.visibility = View.VISIBLE
+                        Toast.makeText(context!!, "${getText(R.string.toast_updateZoneSuccess)}", Toast.LENGTH_LONG).show()
+                    }
+
+                    override fun onFailed() {
+                        Log.d(TAG, "duva: failed to update zone in ZonesFragment")
                         Toast.makeText(context!!, "${getText(R.string.toast_updateZoneFailed)}", Toast.LENGTH_LONG).show()
                     }
                 })
@@ -123,11 +146,37 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
         }
 
         btn_unsubscribeZone.setOnClickListener {
-            val currentSubscription: Subscription = btn_updateSettings.tag as Subscription
+            //val currentSubscription: Subscription = btn_updateSettings.tag as Subscription
+            /*
+            if(btn_updateSettings.tag == null) {
+                Log.i(TAG, "duva: empty btn_updatesettings")
+            } else {
+                Log.i(TAG, "duva: btn_updatesettings is not null")
+            }
+             */
+
+            Globals.clickedZoneObject?.let { zoneObject ->
+                Firestore.deleteSubscription(zoneObject, object: FirestoreCallback {
+                    override fun onSuccess() {
+                        Log.i(TAG, "duva: successfully unsubscribed from zone in ZonesFragment")
+                        btn_unsubscribeZone.visibility = View.INVISIBLE
+                        btn_subscribeZone.visibility = View.VISIBLE
+                        btn_updateSettings.visibility = View.INVISIBLE
+                        switch_settingOverrideSound.isChecked = false
+                        switch_settingNotice.isChecked = false
+                    }
+
+                    override fun onFailed() {
+                        Log.d(TAG, "duva: failed to unsubscribe from zone in ZonesFragment")
+                    }
+                })
+            }
+
+            /*
             Firestore.deleteDocument("subscriptions", currentSubscription.id, object: FirestoreCallback {
                 override fun onSuccess() {
                     Log.i(TAG, "duva: successfully removed document and unsubscribed")
-                    btn_subscribeZone.visibility = View.VISIBLE
+                    btn_subscribeZone.visibility = View.INVISIBLE
                     btn_unsubscribeZone.visibility = View.INVISIBLE
                     btn_updateSettings.visibility = View.INVISIBLE
                 }
@@ -136,6 +185,9 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
                     Log.d(TAG, "duva: failed to remove document and unsubscribe")
                 }
             })
+            */
+
+
 
             // TODO: unsubscribing should only toggle active flag, find nicer way instead of deleting
             // TODO: That means above method is wrong, convert subscription method first
@@ -245,6 +297,7 @@ class ZonesFragment : Fragment(), OnMapReadyCallback, GoogleMapInterface {
 
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(zone.location.latitude, zone.location.longitude), 15f))
         Globals.clickedZone = zone.id
+        Globals.clickedZoneObject = zone
         txt_clickedZone.text = Globals.getZoneNameFromZoneId(zone.id)
 
         if(auth.currentUser == null) {

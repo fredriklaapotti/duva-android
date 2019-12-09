@@ -13,6 +13,7 @@ object Globals {
     var activeZoneId: String = "0"
     var allZones: MutableList<Zone>? = null
     var clickedZone: String = "unknown"
+    var clickedZoneObject: Zone? = null
     var geofencesAdded: Boolean = true
     var permissionsGranted: Boolean = false
 

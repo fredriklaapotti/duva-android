@@ -211,6 +211,61 @@ object Firestore {
             }
     }
 
+    fun <T> updateSubscription(zone: Zone, fieldValues: MutableMap<String, T>, callback: FirestoreCallback) {
+        val db = FirebaseFirestore.getInstance()
+
+        if(Globals.currentUser != null) {
+            val ref = db.collection("subscriptions").whereEqualTo("zone", zone.id).whereEqualTo("user", Globals.currentUser?.uid)
+                .get()
+                .addOnSuccessListener { documents ->
+                    for(document in documents) {
+
+                        val batch = db.batch()
+                        for((key, value) in fieldValues) {
+                            Log.i(TAG, "duva: firestore adding $key:$value to batchUpdate")
+                            batch.update(db.collection("subscriptions").document(document.id), key, value)
+                        }
+
+                        batch.commit()
+                            .addOnSuccessListener {
+                                Log.i(TAG, "duva: firestore successfully commited batch update")
+                                callback.onSuccess()
+                            }
+                            .addOnFailureListener {
+                                Log.i(TAG, "duva: firestore failed to commit batch update")
+                                callback.onFailed()
+                            }
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    Log.d(TAG, "duva: failed to deleteSubscription", exception)
+                    callback.onFailed()
+                }
+        }
+    }
+
+    fun deleteSubscription(zone: Zone, callback: FirestoreCallback) {
+        val db = FirebaseFirestore.getInstance()
+        if(Globals.currentUser != null) {
+            val ref = db.collection("subscriptions").whereEqualTo("zone", zone.id).whereEqualTo("user", Globals.currentUser?.uid)
+                .get()
+                .addOnSuccessListener { documents ->
+                    for(document in documents) {
+                        Log.i(TAG, "duva: found matching document")
+                        db.collection("subscriptions").document(document.id).delete()
+                        callback.onSuccess()
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    Log.d(TAG, "duva: failed to deleteSubscription", exception)
+                    callback.onFailed()
+                }
+        } else {
+            Log.d(TAG, "duva: Globals.currentUser is null, not deleting subscription")
+            callback.onFailed()
+        }
+    }
+
     /**
      * Deprecated, keep for eventual future use
      * Reason was it's just easier to call setupUser/Subscription/Zone() when user logs in,

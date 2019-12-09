@@ -4,6 +4,8 @@
     <string name="title_home">Home</string>
     <string name="title_zones">Zones</string>
     <string name="title_settings">Settings</string>
+    <string name="notification_channel">duva_notification</string>
+    <string name="notification_description">Notification channel for Duva - Android client</string>
 
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
