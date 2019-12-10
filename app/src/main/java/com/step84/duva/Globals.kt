@@ -1,10 +1,13 @@
 package com.step84.duva
 
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.firestore.GeoPoint
 
 object Globals {
     private val TAG = "Globals"
+
     var currentUser: User? = null
     var currentSubscriptions: MutableList<Subscription>? = null
     var currentSubscription: Subscription? = null

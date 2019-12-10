@@ -19,6 +19,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.work.*
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.tasks.Task
@@ -31,6 +32,7 @@ import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.GeoPoint
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_home.*
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity(),
     HomeFragment.OnFragmentInteractionListener,
@@ -39,6 +41,7 @@ class MainActivity : AppCompatActivity(),
 
     private val TAG = "MainActivity"
     private val CHANNELID = "0";
+    private val UNIQUEWORKSTRING = "duvauniquework"
     private val requestCodeAccessFineLocation = 101
     private val requestCodeWriteExternalStorage = 102
     private val requestCodeRecordAudio = 103
@@ -57,19 +60,20 @@ class MainActivity : AppCompatActivity(),
     private lateinit var geofencingClient: GeofencingClient
     private var geofenceList: MutableList<Geofence> = mutableListOf()
 
+    /*
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(this, GeofenceTransitionsIntentService::class.java)
         Log.i(TAG, "duva: geofence starting intent service")
         //PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
         PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
-    /*
+     */
+
     private val geofencePendingIntent: PendingIntent by lazy {
         Log.i(TAG, "duva: geofence intent after getBroadcast()")
         val intent = Intent(this, GeofenceBroadcastReceiver::class.java)
         PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
-     */
 
     private val mOnNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
         when (item.itemId) {
@@ -146,6 +150,27 @@ class MainActivity : AppCompatActivity(),
     override fun onStart() {
         super.onStart()
         startLocationUpdates()
+
+        Log.i(TAG, "duva: sync building worker")
+        var workerData = Data.Builder()
+            .putString("uid", "0")
+            .build()
+
+        // TODO: REALLY ensure we send a uid to the worker
+        if(Globals.currentUser != null && Globals.currentUser?.uid != "0") {
+            workerData = Data.Builder()
+                .putString("uid", Globals.currentUser?.uid)
+                .build()
+        }
+
+        val constraints = Constraints.Builder()
+            .build()
+        val workerRequest = PeriodicWorkRequestBuilder<BackgroundSyncWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(constraints)
+            .setInputData(workerData)
+            .build()
+        //WorkManager.getInstance(this).enqueue(workerRequest)
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(UNIQUEWORKSTRING, ExistingPeriodicWorkPolicy.REPLACE, workerRequest)
     }
 
     override fun onResume() {
@@ -167,14 +192,16 @@ class MainActivity : AppCompatActivity(),
                 override fun onFailed() {}
             })
         }
-        stopLocationUpdates()
+        //stopLocationUpdates()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        /*
         if(Globals.permissionsGranted) {
             unregisterReceiver(br)
         }
+        */
     }
 
     // TODO: update this, placeholder for auth callback
@@ -193,7 +220,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun startLocationUpdates() {
+    fun startLocationUpdates() {
         Log.i(TAG, "duva: in startLocationUpdates()")
         if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
             locationRequest = LocationRequest().apply {

@@ -157,16 +157,18 @@ class SettingsFragment : Fragment() {
                                 Log.i(TAG, "duva: user login Microsoft user logged in successfully in startActivityForSignInWithProvider")
 
 
-                                if(authResult.additionalUserInfo.isNewUser) {
-                                    val newUser: User = User(uid = auth.uid.toString(), active = true)
-                                    Firestore.addUser(newUser, object: FirestoreCallback {
-                                        override fun onSuccess() {
-                                            Log.i(TAG, "duva: user ${auth.uid.toString()} successfully added to database")
-                                        }
-                                        override fun onFailed() {
-                                            Log.d(TAG, "duva: newly signed up user failed to add to database")
-                                        }
-                                    })
+                                if(authResult.additionalUserInfo != null) {
+                                    if(authResult.additionalUserInfo!!.isNewUser) {
+                                        val newUser: User = User(uid = auth.uid.toString(), active = true)
+                                        Firestore.addUser(newUser, object: FirestoreCallback {
+                                            override fun onSuccess() {
+                                                Log.i(TAG, "duva: user ${auth.uid.toString()} successfully added to database")
+                                            }
+                                            override fun onFailed() {
+                                                Log.d(TAG, "duva: newly signed up user failed to add to database")
+                                            }
+                                        })
+                                    }
                                 }
 
                                 btn_signInAnonymous.visibility = View.INVISIBLE
