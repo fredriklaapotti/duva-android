@@ -1,7 +1,9 @@
 package com.step84.duva
 
 import android.Manifest
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.Location
@@ -24,7 +26,7 @@ class BackgroundSyncWorker(appContext: Context, workerParams: WorkerParameters) 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
-    private lateinit var geofencingClient: GeofencingClient
+    private lateinit var geofencingClientWorker: GeofencingClient
     private var geofenceList: MutableList<Geofence> = mutableListOf()
 
     private val mContext: Context = appContext
@@ -33,8 +35,16 @@ class BackgroundSyncWorker(appContext: Context, workerParams: WorkerParameters) 
     private var syncAllZones: MutableList<Zone>? = null
     private var syncAllSubscriptions: MutableList<Subscription>? = null
 
+    private val geofencePendingIntent: PendingIntent by lazy {
+        Log.i(TAG, "duva: geofence intent after getBroadcast()")
+        val intent = Intent(applicationContext, GeofenceBroadcastReceiver::class.java)
+        //applicationContext.sendBroadcast(intent)
+        PendingIntent.getBroadcast(applicationContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+    }
+
     override fun doWork(): Result = try {
         Log.i(TAG, "duva: background in doWork()")
+        geofencingClientWorker = LocationServices.getGeofencingClient(applicationContext)
         // Result.failure, Result.retry
 
 
@@ -71,8 +81,8 @@ class BackgroundSyncWorker(appContext: Context, workerParams: WorkerParameters) 
     }
 
     fun isInGeofence(zone: Zone, userPosition: GeoPoint) : Boolean {
-        Log.i(TAG, "duva: sync calculating distance between: " + zone.location.toString() + " and " + userPosition.toString())
-        Log.i(TAG, "duva: sync distance = " + haversine(zone.location, userPosition))
+        //Log.i(TAG, "duva: sync calculating distance between: " + zone.location.toString() + " and " + userPosition.toString())
+        //Log.i(TAG, "duva: sync distance = " + haversine(zone.location, userPosition))
         return haversine(zone.location, userPosition) < zone.radius
     }
 
@@ -102,6 +112,7 @@ class BackgroundSyncWorker(appContext: Context, workerParams: WorkerParameters) 
     private fun startLocationUpdates() {
         Log.i(TAG, "duva: in startLocationUpdates()")
         if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            /*
             locationRequest = LocationRequest().apply {
                 interval = 60 * 1000
                 fastestInterval = 20 * 1000
@@ -128,7 +139,17 @@ class BackgroundSyncWorker(appContext: Context, workerParams: WorkerParameters) 
             }
 
             registerLocationListener()
+
+             */
             //fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
+
+            /**
+             * The following code works, by starting location updates followed by database calls and manual geofence checking.
+             * However, it might be enough just to probe lastLocation every 15 minutes to invoke geofence events in the JobIntentService.
+             * Commenting this one out and trying with copy below.
+             */
+            /*
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(mContext)
             fusedLocationClient.lastLocation
                 .addOnSuccessListener { location: Location? ->
                     Log.i(TAG, "duva: sync = " + location?.latitude + ", " + location?.longitude)
@@ -145,6 +166,57 @@ class BackgroundSyncWorker(appContext: Context, workerParams: WorkerParameters) 
                         }
 
                     // TODO: make sure we receive inputData with uid
+                    Log.i(TAG, "duva: sync user from inputData() = " + inputData.getString("uid"))
+                    db.collection("subscriptions").whereEqualTo("user", inputData.getString("uid")).get()
+                        .addOnSuccessListener { documents ->
+                            syncAllSubscriptions = documents.toObjects(Subscription::class.java)
+                            Log.i(TAG, "duva: sync syncAllSubscriptions= " + syncAllSubscriptions?.toString())
+                        }
+                        .addOnFailureListener { exception ->
+                            Log.d(TAG, "duva: sync failed to read from database: ", exception)
+                        }
+
+                }
+             */
+
+            /**
+             * This didn't work.
+             */
+            /*
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(mContext)
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location: Location? ->
+                    Log.i(TAG, "duva: sync = " + location?.latitude + ", " + location?.longitude)
+                }
+                .addOnFailureListener {
+                    Log.d(TAG, "duva: sync lastLocation in worker failed")
+                }
+             */
+
+
+            /**
+             * Third time the charm. Now trying if a geofence check might trigger an intent to the JobIntentService.
+             * Still, it gets more tempting to just rewrite everything for the background sync worker.
+             */
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(mContext)
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location: Location? ->
+                    Log.i(TAG, "duva: sync = " + location?.latitude + ", " + location?.longitude)
+                    val gp = GeoPoint(location!!.latitude, location!!.longitude)
+
+                    db.collection("zones").get()
+                        .addOnSuccessListener { documents ->
+                            syncAllZones = documents.toObjects(Zone::class.java)
+                            setupGeofences(documents.toObjects(Zone::class.java))
+                            Log.i(TAG, "duva: sync syncAllZones = " + syncAllZones?.toString())
+                            //checkZones(gp)
+                        }
+                        .addOnFailureListener { exception ->
+                            Log.d(TAG, "duva: sync failed to read from database: ", exception)
+                        }
+
+                    // TODO: make sure we receive inputData with uid
+                    Log.i(TAG, "duva: sync user from inputData() = " + inputData.getString("uid"))
                     db.collection("subscriptions").whereEqualTo("user", inputData.getString("uid")).get()
                         .addOnSuccessListener { documents ->
                             syncAllSubscriptions = documents.toObjects(Subscription::class.java)
@@ -180,6 +252,48 @@ class BackgroundSyncWorker(appContext: Context, workerParams: WorkerParameters) 
                 }
             }
         }
+    }
+
+    fun setupGeofences(zones: MutableList<Zone>) {
+        Log.i(TAG, "duva: SYNC in setupGeofences()")
+        for(zone in zones) {
+            //Log.i(TAG, "duva: SYNC geofence zone found = " + zone.name)
+            geofenceList.add(Geofence.Builder()
+                .setRequestId(zone.id)
+                .setCircularRegion(zone.location.latitude, zone.location.longitude, zone.radius.toFloat())
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .setLoiteringDelay(20 * 1000)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_DWELL or Geofence.GEOFENCE_TRANSITION_EXIT)
+                .build())
+        }
+
+        Log.i(TAG, "duva: SYNC geofence list = " + geofenceList.toString())
+
+        if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            Log.i(TAG, "duva: SYNC geofence adding or removing geofences")
+            if(this::geofencingClientWorker.isInitialized) {
+                Log.i(TAG, "duva: SYNC geofence before geofencingClient.addGeofences()")
+                geofencingClientWorker.addGeofences(getGeofencingRequest(), geofencePendingIntent)?.run {
+                    addOnSuccessListener {
+                        Log.i(TAG, "duva: SYNC geofence added, geofencePendingIntent = " + geofencePendingIntent.toString())
+                        Globals.geofencesAdded = true
+                    }
+                    addOnFailureListener {
+                        Log.d(TAG, "duva: SYNC failed to add geofence" + exception.toString())
+                        Globals.geofencesAdded = false
+                    }
+                }
+            }
+            Log.i(TAG, "duva: SYNC geofence exiting from checkPermission block")
+        }
+    }
+
+    private fun getGeofencingRequest(): GeofencingRequest {
+        Log.i(TAG, "duva: SYNC geofence getGeofencingRequest()")
+        return GeofencingRequest.Builder().apply {
+            setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER or GeofencingRequest.INITIAL_TRIGGER_DWELL)
+            addGeofences(geofenceList)
+        }.build()
     }
 
     private fun checkPermission(permissionString: String): Boolean = ContextCompat.checkSelfPermission(applicationContext, permissionString) == PackageManager.PERMISSION_GRANTED

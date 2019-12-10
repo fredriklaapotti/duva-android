@@ -156,11 +156,13 @@ class MainActivity : AppCompatActivity(),
             .putString("uid", "0")
             .build()
 
-        // TODO: REALLY ensure we send a uid to the worker
-        if(Globals.currentUser != null && Globals.currentUser?.uid != "0") {
+        if(auth.currentUser != null) {
+            Log.d(TAG, "duva: sync user found, sending uid = " + auth.uid + " to worker")
             workerData = Data.Builder()
-                .putString("uid", Globals.currentUser?.uid)
+                .putString("uid", auth.uid)
                 .build()
+        } else {
+            Log.d(TAG, "duva: sync user no Firebase auth object found, sending uid = 0 to worker")
         }
 
         val constraints = Constraints.Builder()
