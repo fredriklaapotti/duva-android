@@ -13,14 +13,17 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
     private val TAG = "GeofenceBroadcastReceiver"
 
     override fun onReceive(context: Context?, intent: Intent?) {
-        Log.i(TAG, "duva: geofence broadcast received in class")
+        Log.i(TAG, "duva: geofence broadcast received in class = " + intent.toString())
 
         /**
          * JobIntentService test
          */
 
         if(context != null && intent != null) {
+            Log.i(TAG, "duva: geofence in BroadcastReceiver() context != null and intent != null")
             GeofenceTransitionsJobIntentService().enqueueWork(context, intent)
+        } else {
+            Log.d(TAG, "duva: geofence in BroadcastReceiver() context or intent == null")
         }
 
         /**

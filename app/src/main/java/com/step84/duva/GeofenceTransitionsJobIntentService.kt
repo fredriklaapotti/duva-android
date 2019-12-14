@@ -33,6 +33,7 @@ class GeofenceTransitionsJobIntentService : JobIntentService() {
         }
 
         val geofenceTransition = geofencingEvent.geofenceTransition
+        Log.i(TAG, "duva: geofenceTransition = ${geofenceTransition.toString()}")
         val triggeringGeofences = geofencingEvent.triggeringGeofences
         val geofenceTransitionDetails = getGeofenceTransitionDetails(geofenceTransition, triggeringGeofences)
 
@@ -50,10 +51,10 @@ class GeofenceTransitionsJobIntentService : JobIntentService() {
         }
 
         Log.i(TAG, "duva: geofence broadcastIntent = $broadcastIntent")
-        //createNotification("geofence", "change")
+        //createNotification("JobIntentService", "Received broadcast: $broadcastString")
 
-        if(ctx != null) {
-            LocalBroadcastManager.getInstance(ctx!!).sendBroadcast(broadcastIntent)
+        if(applicationContext != null) {
+            LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(broadcastIntent)
         }
         Log.i(TAG, "duva: geofence $geofenceTransitionDetails")
     }

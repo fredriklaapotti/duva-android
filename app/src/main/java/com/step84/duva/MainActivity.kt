@@ -131,6 +131,16 @@ class MainActivity : AppCompatActivity(),
         checkPermissionsAndInitialize()
         createNotificationChannel()
 
+        if(checkPermission(Manifest.permission.FOREGROUND_SERVICE)) {
+            Log.i(TAG, "duva: foreground service permitted, starting..")
+            ForegroundService.startService(this, "Service is running..")
+        } else if(Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            Log.i(TAG, "duva: foreground service less than P, starting..")
+            ForegroundService.startService(this, "Service is running..")
+        } else {
+            Log.d(TAG, "duva: foreground service not permitted")
+        }
+
         Log.i(TAG, "duva: currentUser object in MainActivity = " + currentUser?.lastLocation) // Should return null
     }
 
@@ -142,6 +152,8 @@ class MainActivity : AppCompatActivity(),
             setupSubscriptions()
             setupZones()
         }
+
+
     }
 
     override fun onFragmentInteraction(uri: Uri) {
@@ -151,6 +163,7 @@ class MainActivity : AppCompatActivity(),
         super.onStart()
         startLocationUpdates()
 
+        /*
         Log.i(TAG, "duva: sync building worker")
         var workerData = Data.Builder()
             .putString("uid", "0")
@@ -173,6 +186,9 @@ class MainActivity : AppCompatActivity(),
             .build()
         //WorkManager.getInstance(this).enqueue(workerRequest)
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(UNIQUEWORKSTRING, ExistingPeriodicWorkPolicy.REPLACE, workerRequest)
+         */
+        WorkManager.getInstance(this).cancelUniqueWork(UNIQUEWORKSTRING)
+        WorkManager.getInstance(this).cancelAllWork()
     }
 
     override fun onResume() {
@@ -199,6 +215,9 @@ class MainActivity : AppCompatActivity(),
 
     override fun onDestroy() {
         super.onDestroy()
+        ForegroundService.stopService(this)
+
+
         /*
         if(Globals.permissionsGranted) {
             unregisterReceiver(br)
@@ -260,7 +279,7 @@ class MainActivity : AppCompatActivity(),
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
-                Log.i(TAG, "duva: geofence location in onLocationResult()")
+                //Log.i(TAG, "duva: geofence location in onLocationResult()")
                 for(location in locationResult.locations) {
                     //Log.i(TAG, "duva: location geofence looping in registerLocationListener()")
                     currentLocation = GeoPoint(location.latitude, location.longitude)
@@ -443,7 +462,7 @@ class MainActivity : AppCompatActivity(),
                     })
                 }
 
-                createNotification("enter a zone", zoneid)
+                createNotification("Enter", "Zone: " + Globals.getZoneNameFromZoneId(zoneid))
             }
             "dwell" -> {
                 Log.i(TAG, "duva: geofence geofenceTransition() dwell in MainActivity: $zoneid")
@@ -453,10 +472,12 @@ class MainActivity : AppCompatActivity(),
                 // Separate paths for logged in users since we also update database if logged in
                 if(auth.currentUser != null && currentUser != null) {
                     val subscriptionid: String = getSubscriptionidFromZoneid(zoneid)
-                    Firestore.updateField("subscriptions", subscriptionid, "active", true, object: FirestoreCallback {
-                        override fun onSuccess() {}
-                        override fun onFailed() {}
-                    })
+                    if(subscriptionid != null) {
+                        Firestore.updateField("subscriptions", subscriptionid, "active", true, object: FirestoreCallback {
+                            override fun onSuccess() {}
+                            override fun onFailed() {}
+                        })
+                    }
 
                     Firestore.updateField("users", currentUser!!.id, "lastZone", zoneid, object: FirestoreCallback {
                         override fun onSuccess() {}
@@ -468,7 +489,7 @@ class MainActivity : AppCompatActivity(),
                         override fun onFailed() {}
                     })
                 }
-                createNotification("dwell in zone", zoneid)
+                createNotification("Dwell", "Zone: " + Globals.getZoneNameFromZoneId(zoneid))
             }
             "exit" -> {
                 Log.i(TAG, "duva: geofence geofenceTransition() exit in MainActivity: $zoneid")
@@ -477,10 +498,12 @@ class MainActivity : AppCompatActivity(),
 
                 if(auth.currentUser != null && currentUser != null) {
                     val subscriptionid: String = getSubscriptionidFromZoneid(zoneid)
-                    Firestore.updateField("subscriptions", subscriptionid, "active", false, object: FirestoreCallback {
-                        override fun onSuccess() {}
-                        override fun onFailed() {}
-                    })
+                    if(subscriptionid != null) {
+                        Firestore.updateField("subscriptions", subscriptionid, "active", false, object: FirestoreCallback {
+                            override fun onSuccess() {}
+                            override fun onFailed() {}
+                        })
+                    }
 
                     val oneSelected: Subscription
                     val selectedSubscription = Globals.currentSubscriptions?.filter { it.zone.equals(zoneid) }
@@ -502,7 +525,7 @@ class MainActivity : AppCompatActivity(),
                     }
 
                 }
-                createNotification("exit zone", zoneid)
+                //createNotification("Exit", "Zone: " + Globals.getZoneNameFromZoneId(zoneid))
             }
         }
     }
@@ -636,7 +659,6 @@ class MainActivity : AppCompatActivity(),
         LocalBroadcastManager.getInstance(this).registerReceiver(br, filter)
 
         checkPermissionsAndInitialize()
-
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
         switchFragment(HomeFragment(), "HomeFragment")
     }
