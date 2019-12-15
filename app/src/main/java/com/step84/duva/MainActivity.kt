@@ -531,10 +531,16 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun createNotification(title: String, content: String) {
+        val notificationIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntentNotification = PendingIntent.getActivity(this, 0, notificationIntent, 0)
+
         val builder = NotificationCompat.Builder(this, CHANNELID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(android.R.drawable.ic_media_play, 0)
             .setContentTitle(title)
             .setContentText(content)
+            .setContentIntent(pendingIntentNotification)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
         with(NotificationManagerCompat.from(this)) {
